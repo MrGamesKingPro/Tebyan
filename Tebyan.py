@@ -9,6 +9,8 @@ import sys
 import os
 import json
 import csv
+import xml.etree.ElementTree as ET # <--- Import ElementTree
+from xml.etree.ElementTree import ParseError as ETParseError # <-- Import specific ParseError
 import threading
 import queue # For thread-safe GUI updates
 
@@ -18,7 +20,7 @@ INPUT_LABEL_TEXT = ": أدخل النص الأصلي العربي هنا"
 OUTPUT_LABEL_TEXT = ": النص المعدل (انسخ من هنا)"
 PROCESS_BUTTON_TEXT = "معالجة النص"
 COPY_ALL_BUTTON_TEXT = "نسخ الكل"
-CLEAR_ALL_TEXT_BUTTON_TEXT = "مسح الكل (النصوص)" # **** NEW CONSTANT ****
+CLEAR_ALL_TEXT_BUTTON_TEXT = "مسح الكل (النصوص)"
 DIRECT_TAB_TEXT = "معالجة نصوص"
 FILE_TAB_TEXT = "معالجة ملفات"
 SELECT_FILES_BUTTON_TEXT = "فتح ملفًا أو أكثر"
@@ -26,7 +28,7 @@ SELECTED_FILES_LABEL_TEXT = ":عدد الملفات المحددة"
 SELECT_OUTPUT_DIR_BUTTON_TEXT = "مسار المجلد الحفظ"
 SELECTED_OUTPUT_DIR_LABEL_TEXT = ": مجلد الحفظ"
 PROCESS_FILES_BUTTON_TEXT = "معالجة الملفات المحددة"
-CLEAR_ALL_FILES_BUTTON_TEXT = "مسح الكل (الملفات)" # **** NEW CONSTANT ****
+CLEAR_ALL_FILES_BUTTON_TEXT = "مسح الكل (الملفات)"
 STATUS_LABEL_TEXT = "ملفات :"
 READY_STATUS = "سجل"
 PROCESSING_STATUS = "جاري المعالجة..."
@@ -40,7 +42,7 @@ MENU_ABOUT = "عن البرنامج"
 MENU_INSTRUCTIONS = "تعليمات"
 HELP_TITLE = "تعليمات"
 ABOUT_TITLE = "حول البرنامج"
-ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.1\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped
+ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.2\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.2
 HELP_TEXT = """
 كيفية الاستخدام:
 
@@ -53,17 +55,19 @@ HELP_TEXT = """
     *   .يمكنك حفظ النص المعدل من قائمة 'ملف'
 
 2.  **معالجة ملفات**
-    *   .(.txt)، JSON (.json)، أو CSV (.csv) اضغط على 'فتح ملفًا أو أكثر' لتحديد ملفات نصية ذات إمتداد
+    *   .(.txt)، JSON (.json)، CSV (.csv)، أو XML (.xml) اضغط على 'فتح ملفًا أو أكثر' لتحديد ملفات نصية ذات إمتداد
     *   .اضغط على 'مسارالمجلد الحفظ' لتحديد المجلد الذي سيتم حفظ الملفات المعالجة فيه
     *   .سيتم إنشاء مجلد فرعي باسم 'processed_files' داخل المجلد المختار (إذا لم يكن موجوداً)
     *   .اضغط على 'معالجة الملفات المحددة'.
     *   .سيتم معالجة النصوص العربية فقط داخل الملفات وحفظ نسخ جديدة بنفس إسم والتنسيق في المجلد المخصص
+    *   .(XML سيتم معالجة النصوص داخل العناصر، ونهايات العناصر، وقيم السمات في ملفات)
     *   .تابع شريط التقدم وسجل الحالة لمعرفة حالة العملية.
     *   .يمكنك مسح قائمة الملفات ومجلد الحفظ والسجل باستخدام زر 'مسح الكل (الملفات)'
 
 ملاحظات:
 *    .UTF-8 تأكد من أن الملفات تستخدم ترميز
 *   .في ملفات CSV و JSON، سيتم محاولة معالجة كل القيم النصية
+*   .في ملفات XML، سيتم محاولة معالجة كل النصوص الموجودة في العناصر والسمات ونهايات العناصر
 *   .يمكنك استخدام زر الفأرة الأيمن للقص/النسخ/اللصق في مربعات النص (حسب ما إذا كان المربع قابلاً للكتابة أو للقراءة فقط)
 """
 COPY_TEXT = "نسخ"
@@ -162,8 +166,47 @@ def process_json_file(input_path, output_path):
     except Exception as e:
         return False, f"{ERROR_READING_FILE}/{ERROR_WRITING_FILE}/{ERROR_PROCESSING_FILE} (JSON): {e}"
 
+# --- NEW: XML File Processing Logic ---
+def process_xml_file(input_path, output_path):
+    """
+    Parses an XML file, processes Arabic text in elements and attributes,
+    and writes the modified XML to the output path.
+    """
+    try:
+        # Parse the XML file
+        # We need a parser that recovers from errors to handle comments/PIs correctly sometimes
+        parser = ET.XMLParser(encoding='utf-8', target=ET.TreeBuilder())
+        tree = ET.parse(input_path, parser=parser)
+        root = tree.getroot()
+
+        # Iterate through ALL elements in the tree using iter()
+        for element in root.iter():
+            # 1. Process element.text (text directly within tags)
+            if element.text:
+                element.text = process_arabic_text(element.text)
+
+            # 2. Process element.tail (text after the element's closing tag)
+            if element.tail:
+                element.tail = process_arabic_text(element.tail)
+
+            # 3. Process attribute values
+            for attr_key, attr_value in element.attrib.items():
+                if isinstance(attr_value, str): # Check if value is string
+                    element.attrib[attr_key] = process_arabic_text(attr_value)
+
+        # Write the modified tree back to a file
+        # xml_declaration=True adds <?xml version="1.0" encoding="UTF-8"?>
+        # method="xml" ensures standard XML output (not HTML, etc.)
+        tree.write(output_path, encoding='utf-8', xml_declaration=True, method="xml")
+        return True, None
+    except ETParseError as e:
+        return False, f"{ERROR_READING_FILE} (XML Parse): {e}"
+    except Exception as e:
+        # Catch other potential errors during processing or writing
+        return False, f"{ERROR_READING_FILE}/{ERROR_WRITING_FILE}/{ERROR_PROCESSING_FILE} (XML): {e}"
+
 # --- Worker Thread for File Processing ---
-# ... (Keep file_processing_worker as is) ...
+# ... (Updated file_processing_worker) ...
 def file_processing_worker(file_list, output_dir, progress_queue):
     total_files = len(file_list)
     processed_count = 0
@@ -200,6 +243,8 @@ def file_processing_worker(file_list, output_dir, progress_queue):
                  success, error_msg = process_csv_file(input_path, output_path)
             elif ext_lower == '.json':
                  success, error_msg = process_json_file(input_path, output_path)
+            elif ext_lower == '.xml': # <--- Added XML check
+                 success, error_msg = process_xml_file(input_path, output_path)
             else:
                  error_msg = f"{ERROR_INVALID_FORMAT}: {ext}"
                  success = False
@@ -227,7 +272,7 @@ class ArabicProcessorApp:
         self.root = root
         self.root.title(APP_TITLE)
         self.style = tb.Style(theme="litera")
-        self.root.minsize(650, 630) # Increased min height slightly more for new buttons
+        self.root.minsize(650, 630)
 
         # Font setup (same as before)
         self.default_font = tkfont.nametofont("TkDefaultFont")
@@ -268,10 +313,9 @@ class ArabicProcessorApp:
         self.notebook.pack(pady=10, padx=10, expand=True, fill=BOTH)
 
         # --- Tab 1: Direct Text Processing ---
+        # ... (Tab 1 remains unchanged) ...
         self.direct_tab = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(self.direct_tab, text=DIRECT_TAB_TEXT)
-
-        # Input Area (same as before)
         input_label = ttk.Label(self.direct_tab, text=INPUT_LABEL_TEXT)
         input_label.pack(pady=(0, 5), anchor=E)
         self.input_text_area = scrolledtext.ScrolledText(self.direct_tab, height=8, width=60, wrap=tk.WORD, font=self.text_widget_font_spec)
@@ -284,12 +328,8 @@ class ArabicProcessorApp:
         self.input_text_area.bind("<Return>", self.handle_input_enter)
         self.input_text_area.focus()
         self.add_context_menu(self.input_text_area)
-
-        # Process Button (same as before)
         process_button = tb.Button(self.direct_tab, text=PROCESS_BUTTON_TEXT, command=self.process_direct_text, bootstyle="success")
         process_button.pack(pady=10)
-
-        # Output Area (same as before)
         output_label = ttk.Label(self.direct_tab, text=OUTPUT_LABEL_TEXT)
         output_label.pack(pady=(5, 5), anchor=E)
         self.output_text_area = scrolledtext.ScrolledText(self.direct_tab, height=8, width=60, wrap=tk.WORD, font=self.text_widget_font_spec)
@@ -297,19 +337,14 @@ class ArabicProcessorApp:
         self.output_text_area.tag_configure("right_readonly", justify='right')
         self.output_text_area.config(state=tk.DISABLED, cursor="arrow")
         self.add_context_menu(self.output_text_area)
-        self.output_text_area.pack(pady=5, padx=5, expand=True, fill=BOTH) # Packed before buttons
-
-        # --- Button Frame for Copy All and Clear All (Direct Tab) ---
+        self.output_text_area.pack(pady=5, padx=5, expand=True, fill=BOTH)
         direct_button_frame = ttk.Frame(self.direct_tab)
-        direct_button_frame.pack(pady=(5, 0), fill=X) # Fill horizontally
-
-        # Pack Clear All button on the LEFT side of the frame
+        direct_button_frame.pack(pady=(5, 0), fill=X)
         self.clear_direct_button = tb.Button(direct_button_frame, text=CLEAR_ALL_TEXT_BUTTON_TEXT, command=self.clear_direct_tab, bootstyle="warning")
-        self.clear_direct_button.pack(side=LEFT, padx=(0, 5)) # Add padding to the right
-
-        # Pack Copy All button on the RIGHT side of the frame
+        self.clear_direct_button.pack(side=LEFT, padx=(0, 5))
         self.copy_all_button = tb.Button(direct_button_frame, text=COPY_ALL_BUTTON_TEXT, command=self.copy_all_output, bootstyle="secondary", state=tk.DISABLED)
-        self.copy_all_button.pack(side=RIGHT, padx=(5, 0)) # Add padding to the left
+        self.copy_all_button.pack(side=RIGHT, padx=(5, 0))
+
 
         # --- Tab 2: File Processing ---
         self.file_tab = ttk.Frame(self.notebook, padding=10)
@@ -410,6 +445,7 @@ class ArabicProcessorApp:
              return 'break'
 
     # --- GUI Event Handlers ---
+    # ... (process_direct_text, clear_direct_tab, copy_all_output, save_processed_text remain unchanged) ...
     def process_direct_text(self):
         """Handles processing text from the direct input area."""
         has_processed_text = False
@@ -460,40 +496,29 @@ class ArabicProcessorApp:
             except tk.TclError:
                 pass
 
-    # --- NEW Method: Clear All Text Fields (Direct Tab) ---
     def clear_direct_tab(self):
         """Clears the input and output text areas in the direct tab."""
         try:
-            # Clear Input Area
             if self.input_text_area.winfo_exists():
                 self.input_text_area.delete("1.0", tk.END)
-                self._force_right_align_input() # Re-apply alignment to empty area
-
-            # Clear Output Area
+                self._force_right_align_input()
             if self.output_text_area.winfo_exists():
                 self.output_text_area.config(state=tk.NORMAL, cursor='arrow')
                 self.output_text_area.delete("1.0", tk.END)
-                # No need to re-apply alignment tag if empty, just disable
                 self.output_text_area.config(state=tk.DISABLED, cursor="arrow")
-
-            # Disable Copy All button
             if self.copy_all_button.winfo_exists():
                 self.copy_all_button.config(state=tk.DISABLED)
-
         except tk.TclError:
-            # Handle potential TclError if widgets are destroyed mid-operation
              try:
-                 if self.direct_tab.winfo_exists(): # Check parent tab existence
+                 if self.direct_tab.winfo_exists():
                      messagebox.showerror(APP_TITLE, "حدث خطأ أثناء مسح مربعات النص.", parent=self.direct_tab)
-             except tk.TclError: pass # Ignore error if showing messagebox fails
+             except tk.TclError: pass
         except Exception as e:
-             # Catch any other unexpected errors
              try:
                  if self.direct_tab.winfo_exists():
                      messagebox.showerror(APP_TITLE, f"حدث خطأ غير متوقع أثناء المسح:\n{e}", parent=self.direct_tab)
              except tk.TclError: pass
 
-    # --- Copy All Output Text --- (same as before)
     def copy_all_output(self):
         text_to_copy = ""
         try:
@@ -521,7 +546,6 @@ class ArabicProcessorApp:
                          messagebox.showerror(APP_TITLE, f"خطأ في النسخ إلى الحافظة:\n{e}", parent=self.direct_tab)
                 except tk.TclError: pass
 
-    # --- Save Processed Text --- (same as before)
     def save_processed_text(self):
         processed_text = ""
         try:
@@ -564,7 +588,7 @@ class ArabicProcessorApp:
                     self.output_text_area.config(state=tk.DISABLED, cursor='arrow')
              except tk.TclError: pass
 
-    # --- Select Files --- (same as before)
+    # --- Select Files --- (Updated for XML)
     def select_files(self):
         parent_widget = self.file_tab if self.file_tab.winfo_exists() else self.root
         if not parent_widget.winfo_exists(): return
@@ -574,6 +598,7 @@ class ArabicProcessorApp:
                 filetypes=[("Text Files", "*.txt"),
                            ("CSV Files", "*.csv"),
                            ("JSON Files", "*.json"),
+                           ("XML Files", "*.xml"), # <--- Added XML type
                            ("All Files", "*.*")],
                  parent=parent_widget
             )
@@ -624,47 +649,32 @@ class ArabicProcessorApp:
                 messagebox.showerror(APP_TITLE, f"حدث خطأ أثناء اختيار المجلد:\n{e}", parent=parent_widget)
              except tk.TclError: pass
 
-    # --- NEW Method: Clear All Selections and Logs (File Tab) ---
+    # --- Clear All Selections and Logs (File Tab) --- (same as before)
     def clear_file_tab(self):
         """Resets the file selection, output directory, log, and progress bar."""
         try:
-            # Check if processing is active first - prevent clearing if active
             if self.worker_thread and self.worker_thread.is_alive():
                  if self.file_tab.winfo_exists():
                     messagebox.showwarning(APP_TITLE, "لا يمكن المسح أثناء معالجة الملفات.", parent=self.file_tab)
                  return
-
-            # Clear file list
             self.selected_files = []
             if self.files_listbox.winfo_exists():
                 self.update_selected_files_display() # Updates label and listbox
-
-            # Clear output directory
             self.output_directory = ""
             if self.selected_output_dir_label.winfo_exists():
                 self.selected_output_dir_label.config(text=f"- :{SELECTED_OUTPUT_DIR_LABEL_TEXT}")
-
-            # Reset status label
             if self.status_label.winfo_exists():
                 self.status_label.config(text=READY_STATUS)
-
-            # Reset progress bar
             if self.progress_bar.winfo_exists():
                 self.progress_bar['value'] = 0
-
-            # Clear log area
             if self.log_area.winfo_exists():
                 self.log_area.config(state=tk.NORMAL, cursor='arrow')
                 self.log_area.delete("1.0", tk.END)
                 self.log_area.config(state=tk.DISABLED, cursor='arrow')
-
-            # Ensure process button is enabled (it should be if not processing)
             if self.process_files_button.winfo_exists():
                 self.process_files_button.config(state=tk.NORMAL)
-            # Ensure clear button itself is enabled
             if self.clear_files_button.winfo_exists():
                 self.clear_files_button.config(state=tk.NORMAL)
-
         except tk.TclError:
              try:
                  if self.file_tab.winfo_exists():
@@ -676,7 +686,7 @@ class ArabicProcessorApp:
                      messagebox.showerror(APP_TITLE, f"حدث خطأ غير متوقع أثناء المسح:\n{e}", parent=self.file_tab)
              except tk.TclError: pass
 
-
+    # --- Start File Processing --- (same as before, worker handles logic)
     def start_file_processing(self):
         """Validates inputs and starts the file processing thread."""
         parent_widget = self.file_tab if self.file_tab.winfo_exists() else self.root
@@ -693,12 +703,10 @@ class ArabicProcessorApp:
              return
 
         try:
-            # *** Disable BOTH Process and Clear buttons ***
             if self.process_files_button.winfo_exists():
                self.process_files_button.config(state=tk.DISABLED)
-            if self.clear_files_button.winfo_exists(): # <-- Disable clear button
+            if self.clear_files_button.winfo_exists():
                self.clear_files_button.config(state=tk.DISABLED)
-
             if self.status_label.winfo_exists():
                self.status_label.config(text=PROCESSING_STATUS)
             if self.progress_bar.winfo_exists():
@@ -722,12 +730,10 @@ class ArabicProcessorApp:
                  if parent_widget.winfo_exists():
                      messagebox.showerror(APP_TITLE, "حدث خطأ أثناء تحديث واجهة المستخدم لبدء المعالجة.", parent=parent_widget)
              except tk.TclError: pass
-             # Attempt to reset UI state if starting failed
              try:
-                 # *** Re-enable BOTH buttons on error ***
                  if self.process_files_button.winfo_exists():
                      self.process_files_button.config(state=tk.NORMAL)
-                 if self.clear_files_button.winfo_exists(): # <-- Re-enable clear button
+                 if self.clear_files_button.winfo_exists():
                      self.clear_files_button.config(state=tk.NORMAL)
                  if self.status_label.winfo_exists():
                      self.status_label.config(text=READY_STATUS)
@@ -755,7 +761,7 @@ class ArabicProcessorApp:
             except tk.TclError:
                  pass
 
-    # --- Check Progress Queue ---
+    # --- Check Progress Queue --- (same as before)
     def check_progress_queue(self):
         try:
             if not self.root.winfo_exists(): return
@@ -774,13 +780,10 @@ class ArabicProcessorApp:
                     parent_widget = self.file_tab if self.file_tab.winfo_exists() else None
                     if self.status_label.winfo_exists():
                         self.status_label.config(text=DONE_STATUS)
-
-                    # *** Re-enable BOTH buttons on completion ***
                     if self.process_files_button.winfo_exists():
                         self.process_files_button.config(state=tk.NORMAL)
-                    if self.clear_files_button.winfo_exists(): # <-- Re-enable clear button
+                    if self.clear_files_button.winfo_exists():
                         self.clear_files_button.config(state=tk.NORMAL)
-
                     if self.progress_bar.winfo_exists():
                          if self.progress_bar['value'] < 100:
                              self.progress_bar['value'] = 100
@@ -803,11 +806,11 @@ class ArabicProcessorApp:
         if self.root.winfo_exists():
             self.root.after(100, self.check_progress_queue)
 
-    # --- Show About --- (Bumped version in text constant)
+    # --- Show About --- (Updated version in text constant)
     def show_about(self):
         parent_widget = self.root if self.root.winfo_exists() else None
         if parent_widget:
-            # ABOUT_TEXT constant was already updated with new version
+            # ABOUT_TEXT constant was already updated with new version 1.2
             messagebox.showinfo(ABOUT_TITLE, ABOUT_TEXT, parent=parent_widget)
 
     # --- Show Help --- (Updated help text constant)
@@ -817,7 +820,7 @@ class ArabicProcessorApp:
             help_win = tb.Toplevel(master=self.root, title=HELP_TITLE)
             help_win.transient(self.root)
             help_win.grab_set()
-            help_win.geometry("550x500") # Increased height slightly for new help text
+            help_win.geometry("550x530") # Increased height slightly more for XML help
             help_win.resizable(False, False)
             help_frame = ttk.Frame(help_win, padding=10)
             help_frame.pack(expand=True, fill=BOTH)
