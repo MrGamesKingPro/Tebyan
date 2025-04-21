@@ -4,7 +4,7 @@ A program to modify Arabic texts to display them correctly in applications and g
 
 Install Libraries
 
-pip install ttkbootstrap arabic_reshaper python-bidi
+pip install tk ttkbootstrap arabic_reshaper python-bidi
 
 برنامج "تبيان" مصمم لمعالجة النصوص العربية لجعلها قابلة للعرض بشكل صحيح في التطبيقات والألعاب التي قد لا تدعم اللغة العربية بشكل مباشر (مثل عدم عرض الحروف المتصلة أو عكس اتجاه النص). يقوم البرنامج بتحويل النص العربي الأصلي إلى صيغة "مرئية" تستخدم أشكال الحروف المنفصلة والمرتبة بشكل صحيح للعرض في البيئات غير الداعم
 
