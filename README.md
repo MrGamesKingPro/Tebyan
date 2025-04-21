@@ -9,8 +9,11 @@ A program to modify Arabic texts to display them correctly in applications and g
 يحتوي البرنامج على واجهتين رئيسيتين يمكن التنقل بينهما باستخدام علامات التبويب:
 
 1.  **معالجة نصوص:** لمعالجة نص تقوم بكتابته مباشرة في البرنامج.
-https://i.imgur.com/iZUZPtR.jpeg
+
+![01](https://github.com/user-attachments/assets/93ae4e61-769a-4958-9a01-8dc1208fad63)
+
 
 3.  **معالجة ملفات:** لمعالجة النصوص العربية الموجودة داخل ملفات نصية (.txt, .csv, .json).
 
-https://i.imgur.com/nDirCwZ.jpeg
+![02](https://github.com/user-attachments/assets/ec794cf7-0f30-4105-8538-aa33e468bf7b)
+
