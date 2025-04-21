@@ -1,6 +1,6 @@
 @echo off
 
-python -m pip install ttkbootstrap arabic_reshaper python-bidi
+python -m pip install tk ttkbootstrap arabic_reshaper python-bidi
 
 pause
 
