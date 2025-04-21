@@ -1,6 +1,9 @@
 # Tebyan
 A program to modify Arabic texts to display them correctly in applications and games that do not support the Arabic language.
 
+[Download Tebyan](https://github.com/MrGamesKingPro/Tebyan/releases/tag/Tebyan)
+
+Or use a version Python 
 
 Install Libraries
 
