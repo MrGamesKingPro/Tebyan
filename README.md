@@ -18,7 +18,7 @@ pip install tk ttkbootstrap arabic_reshaper python-bidi
 ![01](https://github.com/user-attachments/assets/93ae4e61-769a-4958-9a01-8dc1208fad63)
 
 
-2.  **معالجة ملفات:** لمعالجة النصوص العربية الموجودة داخل ملفات نصية (.txt, .csv, .json).
+2.  **معالجة ملفات:** لمعالجة النصوص العربية الموجودة داخل ملفات نصية (txt, .csv, .json. , .xml).
 
 ![02](https://github.com/user-attachments/assets/ec794cf7-0f30-4105-8538-aa33e468bf7b)
 
@@ -43,5 +43,5 @@ pip install tk ttkbootstrap arabic_reshaper python-bidi
 
 ملاحظات:
 *    .UTF-8 تأكد من أن الملفات تستخدم ترميز
-*   .في ملفات CSV و JSON، سيتم محاولة معالجة كل القيم النصية
+*   .في ملفات CSV و xml و JSON، سيتم محاولة معالجة كل القيم النصية
 *   .يمكنك استخدام زر الفأرة الأيمن للقص/النسخ/اللصق في مربعات النص (حسب ما إذا كان المربع قابلاً للكتابة أو للقراءة فقط)
