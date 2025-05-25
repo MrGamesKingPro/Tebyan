@@ -14,9 +14,12 @@ pip install tk ttkbootstrap arabic_reshaper python-bidi tkinterdnd2
 يحتوي البرنامج على واجهتين رئيسيتين يمكن التنقل بينهما باستخدام علامات التبويب:
 
 1.  **معالجة نصوص:** لمعالجة نص تقوم بكتابته مباشرة في البرنامج.
+
 ![1](https://github.com/user-attachments/assets/f4c29303-df09-4fbf-88b7-c9d1d3593f98)
 
-2.  **معالجة ملفات:** لمعالجة النصوص العربية الموجودة داخل ملفات نصية (txt, .csv, .json. , .xml).
+
+3.  **معالجة ملفات:** لمعالجة النصوص العربية الموجودة داخل ملفات نصية (txt, .csv, .json. , .xml).
+
 ![2](https://github.com/user-attachments/assets/e13ee16d-4410-4e8f-a426-b7a20112ee5c)
 
 
