@@ -13,6 +13,7 @@ from xml.etree.ElementTree import ParseError as ETParseError # Import specific P
 import threading
 import queue # For thread-safe GUI updates
 import re # For splitting key=value
+import textwrap # For the new max-length splitting
 
 # --- Try to import tkinterdnd2 for drag-and-drop ---
 try:
@@ -30,7 +31,6 @@ except ImportError:
 # --- Constants and Arabic UI Strings ---
 APP_TITLE = "برنامج تبيان"
 # ... (باقي الثوابت والنصوص العربية كما هي) ...
-# ... (All other constants and Arabic UI strings remain the same)
 INPUT_LABEL_TEXT = ": أدخل النص الأصلي العربي هنا"
 OUTPUT_LABEL_TEXT = ": النص المعدل (انسخ من هنا)"
 PROCESS_BUTTON_TEXT = "معالجة النص"
@@ -57,7 +57,7 @@ MENU_ABOUT = "عن البرنامج"
 MENU_INSTRUCTIONS = "تعليمات"
 HELP_TITLE = "تعليمات"
 ABOUT_TITLE = "حول البرنامج"
-ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.4.1\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية سحب وإفلات الملفات.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.4.1
+ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.4.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية سحب وإفلات الملفات وخيارات تقسيم متقدمة جديدة.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.5.0
 HELP_TEXT = """
 كيفية الاستخدام:
 
@@ -85,15 +85,22 @@ HELP_TEXT = """
 
 3.  **خيارات تقسيم الأسطر المتقدمة (تنطبق على كلا التبويبين عند التفعيل):**
     *   يتم الوصول إليها من خلال زر "خيارات متقدمة..." في أي من التبويبين.
-    *   **تمكين تقسيم الأسطر المتقدم**: عند تحديد هذا الخيار، سيتم تقسيم كل سطر من النص (أو كل قيمة نصية عربية يتم معالجتها في الملفات) إلى جزأين قبل تطبيق المعالجة العربية القياسية.
-    *   **عدد الكلمات من نهاية السطر للجزء الأول**: هذا الرقم يحدد عدد الكلمات التي سيتم أخذها من *نهاية* السطر الأصلي لتكوين "الجزء الأول" من التقسيم. الكلمات المتبقية في *بداية* السطر الأصلي ستشكل "الجزء الثاني".
-        مثال: إذا كان السطر هو "الكلمة1 الكلمة2 الكلمة3 الكلمة4 الكلمة5" وكان هذا الرقم هو 2.
-        - الجزء الأول (الذي سيُعالج أولاً): "الكلمة4 الكلمة5" (آخر كلمتين من السطر الأصلي).
-        - الجزء الثاني (الذي سيُعالج ثانياً): "الكلمة1 الكلمة2 الكلمة3" (الكلمات المتبقية من بداية السطر الأصلي).
-        بعد معالجة كل جزء على حدة، سيتم دمجهما بالترتيب: [الجزء الأول المعالج] + [الفاصل] + [الجزء الثاني المعالج].
-    *   **فاصل الأجزاء**: السلسلة النصية التي سيتم إدراجها بين "الجزء الأول المعالج" و "الجزء الثاني المعالج".
+    *   **تمكين تقسيم الأسطر المتقدم**: عند تحديد هذا الخيار، سيتم تطبيق أحد وضعي التقسيم التاليين:
+        *   **وضع "تقسيم حسب عدد الكلمات من النهاية":**
+            *   **عدد الكلمات من نهاية السطر للجزء الأول**: هذا الرقم يحدد عدد الكلمات التي سيتم أخذها من *نهاية* السطر الأصلي لتكوين "الجزء الأول" من التقسيم. الكلمات المتبقية في *بداية* السطر الأصلي ستشكل "الجزء الثاني".
+            *   مثال: إذا كان السطر هو "الكلمة1 الكلمة2 الكلمة3 الكلمة4 الكلمة5" وكان هذا الرقم هو 2.
+                - الجزء الأول (الذي سيُعالج أولاً): "الكلمة4 الكلمة5".
+                - الجزء الثاني (الذي سيُعالج ثانياً): "الكلمة1 الكلمة2 الكلمة3".
+            *   بعد معالجة كل جزء على حدة، سيتم دمجهما بالترتيب: [الجزء الأول المعالج] + [الفاصل المحدد] + [الجزء الثاني المعالج].
+        *   **وضع "تقسيم حسب طول السطر الأقصى":**
+            *   **الحد الأقصى لعدد الأحرف في السطر الواحد**: يحدد هذا الرقم الطول الأقصى التقريبي لكل جزء ناتج عن التقسيم.
+            *   سيحاول البرنامج تقسيم السطر عند أقرب مسافة (حدود كلمة) قبل تجاوز هذا الحد. إذا كانت كلمة واحدة أطول من الحد، فسيتم تقسيم الكلمة نفسها.
+            *   سيتم معالجة كل جزء ناتج بشكل منفصل، ثم يتم دمج الأجزاء المعالجة باستخدام [الفاصل المحدد] بين كل جزء والجزء الذي يليه.
+            *   مثال: إذا كان السطر "جملة طويلة جداً تحتاج إلى تقسيمها إلى أجزاء أصغر" والحد الأقصى 20 حرفًا والفاصل "\\n".
+                قد ينتج شيء مثل: [معالجة("جملة طويلة جداً")] + "\\n" + [معالجة("تحتاج إلى تقسيمها")] + "\\n" + [معالجة("إلى أجزاء أصغر")].
+    *   **فاصل الأجزاء**: السلسلة النصية التي سيتم إدراجها بين الأجزاء المعالجة (سواء في وضع "الكلمات من النهاية" أو "طول السطر الأقصى").
         *   يمكنك الاختيار من قائمة الفواصل الشائعة (مثل `\\n` لسطر جديد، `<br>` لـ HTML) أو كتابة فاصل مخصص.
-        *   ملاحظة: السلسلة المحددة كفاصل (مثل "\\n" أو "<br>") سيتم إدراجها كما هي حرفيًا بين الجزأين المعالجين. على سبيل المثال، إذا كان الفاصل هو "\\n"، فسيظهر النص "\\n" حرفيًا في الإخراج، وليس سطرًا جديدًا فعليًا.
+        *   ملاحظة: السلسلة المحددة كفاصل (مثل "\\n" أو "<br>") سيتم إدراجها كما هي حرفيًا بين الجزأين المعالجين.
     *   إذا لم يتم تمكين "تقسيم الأسطر المتقدم"، فسيتم معالجة كل سطر أو قيمة نصية عربية بالكامل كوحدة واحدة. النصوص غير العربية ستُترك كما هي.
 
 ملاحظات عامة:
@@ -118,15 +125,20 @@ OUTPUT_FOLDER_NAME = "processed_files"
 ADVANCED_OPTIONS_BUTTON_TEXT = "خيارات متقدمة..."
 ADVANCED_SPLIT_DIALOG_TITLE = "إعدادات تقسيم الأسطر المتقدمة"
 ENABLE_SPLITTING_CHECKBOX_TEXT = "تمكين تقسيم الأسطر المتقدم"
+SPLIT_MODE_LABEL_TEXT = ":وضع التقسيم"
+WORDS_FROM_END_MODE_TEXT = "تقسيم حسب عدد الكلمات من النهاية"
+MAX_LENGTH_MODE_TEXT = "تقسيم حسب طول السطر الأقصى"
 WORDS_FROM_END_LABEL_TEXT = ":عدد الكلمات من نهاية السطر للجزء الأول"
-SEPARATOR_LABEL_TEXT = ":فاصل الأجزاء" # Updated
+MAX_CHARS_LABEL_TEXT = ":الحد الأقصى لعدد الأحرف في السطر الواحد"
+SEPARATOR_LABEL_TEXT = ":فاصل الأجزاء"
 SEPARATOR_COMBOBOX_LABEL_TEXT = ":اختر فاصلًا أو اكتب مخصصًا"
 ERROR_INVALID_WORD_COUNT = "عدد الكلمات يجب أن يكون رقمًا صحيحًا (0 أو أكبر)."
+ERROR_INVALID_MAX_LENGTH = "الحد الأقصى لعدد الأحرف يجب أن يكون رقمًا صحيحًا أكبر من 0."
 OK_BUTTON_TEXT = "موافق"
 CANCEL_BUTTON_TEXT = "إلغاء"
 
 PREDEFINED_SEPARATORS = { # Display name: actual value
-    "\n ": "\n", # Clarified for user that this is literal \n
+    "\n ": "\n",
     "<br> ": "<br>",
     "[LB] ": "[line-break]",
     "| ": " | ",
@@ -162,7 +174,7 @@ def process_arabic_text_core(input_text):
         print(f"Error in process_arabic_text_core for: '{input_text[:50]}...' - {e}", file=sys.stderr)
         return input_text
 
-# --- Text Splitting Utility Function ---
+# --- Text Splitting Utility Functions ---
 def split_text_into_two_parts(text, words_for_first_part_from_end):
     if not isinstance(text, str) or not text.strip():
         return text, ""
@@ -178,6 +190,21 @@ def split_text_into_two_parts(text, words_for_first_part_from_end):
     first_segment = " ".join(first_segment_words)
     second_segment = " ".join(second_segment_words)
     return first_segment, second_segment
+
+def split_string_by_length_with_word_awareness(text, max_chars):
+    if not isinstance(text, str) or not text.strip() or max_chars <= 0:
+        return [text] # Return as a list with one item
+    
+    # textwrap.wrap is good for this.
+    # break_long_words=True: If a word is longer than width, it will be broken.
+    # replace_whitespace=False: Preserve existing whitespace characters (though we usually process line by line).
+    # drop_whitespace=True: Remove leading/trailing whitespace from each wrapped line (usually desired).
+    wrapped_lines = textwrap.wrap(text, width=max_chars,
+                                  break_long_words=True,
+                                  break_on_hyphens=False, # Usually not relevant for Arabic processing
+                                  replace_whitespace=False,
+                                  drop_whitespace=True)
+    return wrapped_lines if wrapped_lines else [text]
 
 
 # --- File Processing Logic (unchanged) ---
@@ -197,6 +224,7 @@ def process_txt_file(input_path, output_path, transform_function):
                     else:
                         outfile.write(original_line_rstrip + '\n')
                 else:
+                    # Only apply transform_function if the whole line is likely Arabic or needs splitting
                     transformed_whole_line = transform_function(original_line_rstrip)
                     outfile.write(transformed_whole_line + '\n')
         return True, None
@@ -212,18 +240,18 @@ def process_csv_file(input_path, output_path, transform_function):
                 header = next(reader)
                 processed_header = []
                 for cell in header:
-                    if isinstance(cell, str):
+                    if isinstance(cell, str): # and _is_arabic(cell): # Process only if cell is string
                         processed_header.append(transform_function(cell))
                     else:
                         processed_header.append(cell)
                 rows.append(processed_header)
 
-            except StopIteration:
+            except StopIteration: # Empty CSV
                  return True, None 
             for row in reader:
                 processed_row = []
                 for cell in row:
-                    if isinstance(cell, str):
+                    if isinstance(cell, str): # and _is_arabic(cell): # Process only if cell is string
                         processed_row.append(transform_function(cell))
                     else:
                         processed_row.append(cell)
@@ -236,7 +264,7 @@ def process_csv_file(input_path, output_path, transform_function):
         return False, f"{ERROR_READING_FILE}/{ERROR_WRITING_FILE}/{ERROR_PROCESSING_FILE} (CSV): {e}"
 
 def _process_json_value(value, transform_function):
-    if isinstance(value, str):
+    if isinstance(value, str): # and _is_arabic(value): # Process only if string
         return transform_function(value)
     elif isinstance(value, dict):
         return {k: _process_json_value(v, transform_function) for k, v in value.items()}
@@ -265,12 +293,12 @@ def process_xml_file(input_path, output_path, transform_function):
         root = tree.getroot()
 
         for element in root.iter():
-            if element.text and isinstance(element.text, str):
+            if element.text and isinstance(element.text, str): # and _is_arabic(element.text):
                 element.text = transform_function(element.text)
-            if element.tail and isinstance(element.tail, str):
+            if element.tail and isinstance(element.tail, str): # and _is_arabic(element.tail):
                 element.tail = transform_function(element.tail)
             for attr_key, attr_value in element.attrib.items():
-                if isinstance(attr_value, str):
+                if isinstance(attr_value, str): # and _is_arabic(attr_value):
                     element.attrib[attr_key] = transform_function(attr_value)
         
         tree.write(output_path, encoding='utf-8', xml_declaration=True, method="xml")
@@ -280,7 +308,7 @@ def process_xml_file(input_path, output_path, transform_function):
     except Exception as e:
         return False, f"{ERROR_READING_FILE}/{ERROR_WRITING_FILE}/{ERROR_PROCESSING_FILE} (XML): {e}"
 
-# --- Worker Thread for File Processing (Unchanged) ---
+# --- Worker Thread for File Processing (Unchanged, uses the modified apply_text_transformations) ---
 def file_processing_worker(file_list, output_dir, progress_queue, text_transformation_func):
     total_files = len(file_list)
     processed_count = 0
@@ -340,7 +368,7 @@ def file_processing_worker(file_list, output_dir, progress_queue, text_transform
     progress_queue.put(("done", None))
 
 
-# --- Advanced Split Options Dialog (Unchanged) ---
+# --- Advanced Split Options Dialog (MODIFIED) ---
 class AdvancedSplitOptionsDialog(tk.Toplevel):
     def __init__(self, parent, app_instance):
         super().__init__(parent)
@@ -359,30 +387,53 @@ class AdvancedSplitOptionsDialog(tk.Toplevel):
         main_frame = ttk.Frame(self, padding=15)
         main_frame.pack(expand=True, fill=BOTH)
 
+        # Enable Checkbox
         self.enable_var = tk.BooleanVar(value=self.parent_app.split_enabled)
-        enable_check = tb.Checkbutton(main_frame, text=ENABLE_SPLITTING_CHECKBOX_TEXT, variable=self.enable_var, bootstyle="primary-round-toggle", command=self.toggle_options_state)
-        enable_check.pack(anchor=E, pady=(0, 10))
+        enable_check = tb.Checkbutton(main_frame, text=ENABLE_SPLITTING_CHECKBOX_TEXT, variable=self.enable_var, bootstyle="primary-round-toggle", command=self.toggle_main_options_state)
+        enable_check.pack(anchor=E, pady=(0, 15))
         
+        # Options Frame (contains mode selection and specific options)
         self.options_frame = ttk.Frame(main_frame)
         self.options_frame.pack(fill=X, expand=True)
 
-        words_frame = ttk.Frame(self.options_frame)
-        words_frame.pack(fill=X, pady=5)
-        words_label = ttk.Label(words_frame, text=WORDS_FROM_END_LABEL_TEXT, font=self.arabic_ui_font)
+        # Mode Selection
+        mode_frame = ttk.Frame(self.options_frame)
+        mode_frame.pack(fill=X, pady=(0,10))
+        mode_label = ttk.Label(mode_frame, text=SPLIT_MODE_LABEL_TEXT, font=self.arabic_ui_font)
+        mode_label.pack(side=RIGHT, padx=(0, 5))
+        
+        self.split_mode_var = tk.StringVar(value=self.parent_app.split_mode)
+        self.words_mode_radio = tb.Radiobutton(mode_frame, text=WORDS_FROM_END_MODE_TEXT, variable=self.split_mode_var, value="words_from_end", command=self.toggle_mode_specific_options_state, bootstyle="primary-toolbutton")
+        self.words_mode_radio.pack(side=RIGHT, padx=2, fill=X, expand=True)
+        self.length_mode_radio = tb.Radiobutton(mode_frame, text=MAX_LENGTH_MODE_TEXT, variable=self.split_mode_var, value="max_length", command=self.toggle_mode_specific_options_state, bootstyle="primary-toolbutton")
+        self.length_mode_radio.pack(side=RIGHT, padx=2, fill=X, expand=True)
+
+
+        # Words from End Options
+        self.words_options_frame = ttk.Frame(self.options_frame)
+        self.words_options_frame.pack(fill=X, pady=5)
+        words_label = ttk.Label(self.words_options_frame, text=WORDS_FROM_END_LABEL_TEXT, font=self.arabic_ui_font)
         words_label.pack(side=RIGHT, padx=(0, 5))
         self.words_var = tk.StringVar(value=str(self.parent_app.split_words_from_end))
-        self.words_entry = tb.Entry(words_frame, textvariable=self.words_var, width=10, justify=LEFT)
+        self.words_entry = tb.Entry(self.words_options_frame, textvariable=self.words_var, width=10, justify=LEFT)
         self.words_entry.pack(side=RIGHT, fill=X, expand=True)
 
-        separator_outer_frame = ttk.Frame(self.options_frame)
-        separator_outer_frame.pack(fill=X, pady=5)
+        # Max Length Options
+        self.length_options_frame = ttk.Frame(self.options_frame)
+        self.length_options_frame.pack(fill=X, pady=5)
+        max_chars_label = ttk.Label(self.length_options_frame, text=MAX_CHARS_LABEL_TEXT, font=self.arabic_ui_font)
+        max_chars_label.pack(side=RIGHT, padx=(0, 5))
+        self.max_len_var = tk.StringVar(value=str(self.parent_app.max_line_length))
+        self.max_len_entry = tb.Entry(self.length_options_frame, textvariable=self.max_len_var, width=10, justify=LEFT)
+        self.max_len_entry.pack(side=RIGHT, fill=X, expand=True)
 
+        # Separator Options (Common)
+        separator_outer_frame = ttk.Frame(self.options_frame)
+        separator_outer_frame.pack(fill=X, pady=(10,5))
         separator_label_widget = ttk.Label(separator_outer_frame, text=SEPARATOR_LABEL_TEXT, font=self.arabic_ui_font)
         separator_label_widget.pack(side=RIGHT, padx=(0,5))
-
         separator_input_frame = ttk.Frame(separator_outer_frame)
         separator_input_frame.pack(side=RIGHT, fill=X, expand=True)
-        
         self.separator_var = tk.StringVar(value=self.parent_app.split_separator_raw)
         self.separator_combobox = tb.Combobox(
             separator_input_frame, 
@@ -400,7 +451,7 @@ class AdvancedSplitOptionsDialog(tk.Toplevel):
         self.separator_var.set(display_value_to_set)
         self.separator_combobox.pack(side=RIGHT, fill=X, expand=True)
 
-
+        # Buttons
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=X, pady=(15, 0))
         ok_button = tb.Button(button_frame, text=OK_BUTTON_TEXT, command=self.ok_action, bootstyle="success")
@@ -408,39 +459,86 @@ class AdvancedSplitOptionsDialog(tk.Toplevel):
         cancel_button = tb.Button(button_frame, text=CANCEL_BUTTON_TEXT, command=self.destroy, bootstyle="secondary")
         cancel_button.pack(side=RIGHT, padx=5, expand=True, fill=X)
 
-        self.toggle_options_state()
+        self.toggle_main_options_state() # Initial state update
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        self.center_dialog(parent)
+
+    def center_dialog(self, parent_window):
         self.update_idletasks()
-        parent_x, parent_y = parent.winfo_x(), parent.winfo_y()
-        parent_w, parent_h = parent.winfo_width(), parent.winfo_height()
-        dialog_w, dialog_h = self.winfo_width(), self.winfo_height()
+        parent_x = parent_window.winfo_x()
+        parent_y = parent_window.winfo_y()
+        parent_w = parent_window.winfo_width()
+        parent_h = parent_window.winfo_height()
+        dialog_w = self.winfo_width()
+        dialog_h = self.winfo_height()
         x = parent_x + (parent_w // 2) - (dialog_w // 2)
         y = parent_y + (parent_h // 2) - (dialog_h // 2)
         self.geometry(f"+{x}+{y}")
-        self.protocol("WM_DELETE_WINDOW", self.destroy)
 
-    def toggle_options_state(self):
-        state = tk.NORMAL if self.enable_var.get() else tk.DISABLED
-        self.words_entry.config(state=state)
-        self.separator_combobox.config(state=state)
+
+    def toggle_main_options_state(self):
+        is_enabled = self.enable_var.get()
+        main_state = tk.NORMAL if is_enabled else tk.DISABLED
+        
+        self.words_mode_radio.config(state=main_state)
+        self.length_mode_radio.config(state=main_state)
+        self.separator_combobox.config(state=main_state)
+
+        if not is_enabled: # If main toggle is off, disable everything below it
+            self.words_entry.config(state=tk.DISABLED)
+            self.max_len_entry.config(state=tk.DISABLED)
+        else: # If main toggle is on, then set states based on mode
+            self.toggle_mode_specific_options_state()
+
+    def toggle_mode_specific_options_state(self):
+        # This is called when radio button changes, or when main toggle is enabled
+        if not self.enable_var.get(): # Should already be handled by toggle_main_options_state
+            return
+
+        current_mode = self.split_mode_var.get()
+        if current_mode == "words_from_end":
+            self.words_entry.config(state=tk.NORMAL)
+            self.max_len_entry.config(state=tk.DISABLED)
+        elif current_mode == "max_length":
+            self.words_entry.config(state=tk.DISABLED)
+            self.max_len_entry.config(state=tk.NORMAL)
+        else: # Should not happen
+            self.words_entry.config(state=tk.DISABLED)
+            self.max_len_entry.config(state=tk.DISABLED)
+
 
     def ok_action(self):
         is_enabled = self.enable_var.get()
+        current_mode = self.split_mode_var.get()
         words_str = self.words_var.get()
+        max_len_str = self.max_len_var.get()
         selected_separator_display = self.separator_var.get()
         separator_raw_to_store = PREDEFINED_SEPARATORS.get(selected_separator_display, selected_separator_display)
 
         if is_enabled:
-            try:
-                words_count = int(words_str)
-                if words_count < 0:
-                    messagebox.showerror(ERROR_INVALID_WORD_COUNT, "عدد الكلمات لا يمكن أن يكون سالبًا.", parent=self)
+            if current_mode == "words_from_end":
+                try:
+                    words_count = int(words_str)
+                    if words_count < 0:
+                        messagebox.showerror(ERROR_INVALID_WORD_COUNT, "عدد الكلمات لا يمكن أن يكون سالبًا.", parent=self)
+                        return
+                    self.parent_app.split_words_from_end = words_count
+                except ValueError:
+                    messagebox.showerror(ERROR_INVALID_WORD_COUNT, "الرجاء إدخال رقم صحيح لعدد الكلمات.", parent=self)
                     return
-            except ValueError:
-                messagebox.showerror(ERROR_INVALID_WORD_COUNT, "الرجاء إدخال رقم صحيح لعدد الكلمات.", parent=self)
-                return
-            self.parent_app.split_words_from_end = words_count
+            elif current_mode == "max_length":
+                try:
+                    max_len = int(max_len_str)
+                    if max_len <= 0:
+                        messagebox.showerror(ERROR_INVALID_MAX_LENGTH, "الحد الأقصى لعدد الأحرف يجب أن يكون أكبر من صفر.", parent=self)
+                        return
+                    self.parent_app.max_line_length = max_len
+                except ValueError:
+                    messagebox.showerror(ERROR_INVALID_MAX_LENGTH, "الرجاء إدخال رقم صحيح للحد الأقصى لعدد الأحرف.", parent=self)
+                    return
         
         self.parent_app.split_enabled = is_enabled
+        self.parent_app.split_mode = current_mode
         self.parent_app.split_separator_raw = separator_raw_to_store
         self.destroy()
 
@@ -449,16 +547,10 @@ class ArabicProcessorApp:
     def __init__(self, root):
         self.root = root
         self.root.title(APP_TITLE)
-        # The style is now set on the root in __main__ if using TkinterDnD.Tk
-        # or by tb.Window directly.
-        # self.style = tb.Style(theme="litera") # Can be kept for configuring specific styles
-        # It's better to access root's style or let ttkbootstrap handle global theming.
-        # For consistency, if self.style is used by other methods, initialize it.
         if hasattr(root, 'style'):
             self.style = root.style
         else:
-            self.style = tb.Style(theme="litera") # Fallback or ensure it's set
-
+            self.style = tb.Style(theme="litera")
 
         self.root.minsize(650, 680)
 
@@ -482,8 +574,11 @@ class ArabicProcessorApp:
         self.progress_queue = queue.Queue()
         self.worker_thread = None
 
+        # Advanced splitting configuration
         self.split_enabled = False
+        self.split_mode = "words_from_end" # "words_from_end" or "max_length"
         self.split_words_from_end = 1
+        self.max_line_length = 15 # Default for new mode
         self.split_separator_raw = "\\n" 
 
         self.menu_bar = tk.Menu(root)
@@ -501,7 +596,7 @@ class ArabicProcessorApp:
         self.notebook = ttk.Notebook(root, bootstyle="primary")
         self.notebook.pack(pady=10, padx=10, expand=True, fill=BOTH)
 
-        # --- Tab 1: Direct Text Processing ---
+        # --- Tab 1: Direct Text Processing (UI Unchanged, logic will use new split options) ---
         self.direct_tab = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(self.direct_tab, text=DIRECT_TAB_TEXT)
         input_label = ttk.Label(self.direct_tab, text=INPUT_LABEL_TEXT)
@@ -539,7 +634,7 @@ class ArabicProcessorApp:
         self.copy_all_button = tb.Button(direct_bottom_button_frame, text=COPY_ALL_BUTTON_TEXT, command=self.copy_all_output, bootstyle="info", state=tk.DISABLED)
         self.copy_all_button.pack(side=RIGHT, padx=(5, 0))
 
-        # --- Tab 2: File Processing ---
+        # --- Tab 2: File Processing (UI Unchanged, logic will use new split options) ---
         self.file_tab = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(self.file_tab, text=FILE_TAB_TEXT)
 
@@ -560,10 +655,8 @@ class ArabicProcessorApp:
         self.add_context_menu(self.files_listbox)
         self.update_selected_files_display()
 
-        # --- Drag and Drop Setup for files_listbox ---
         if DND_SUPPORTED:
             try:
-                # Register the listbox as a drop target for files
                 self.files_listbox.drop_target_register(DND_FILES)
                 self.files_listbox.dnd_bind('<<Drop>>', self.handle_file_drop)
                 self.files_listbox.dnd_bind('<<DragEnter>>', self.handle_drag_enter_listbox)
@@ -571,10 +664,7 @@ class ArabicProcessorApp:
                 self.files_listbox.dnd_bind('<<DragLeave>>', self.handle_drag_leave_listbox)
                 self.original_listbox_bg = self.files_listbox.cget("background")
             except Exception as e:
-                # This might happen if TkinterDnD.Tk() was not used as root, or other issues.
                 print(f"فشل في تهيئة خاصية السحب والإفلات لـ files_listbox: {e}", file=sys.stderr)
-                # DND features for this widget will simply not work.
-        # --- End Drag and Drop Setup ---
 
         output_dir_frame = ttk.Frame(self.file_tab)
         output_dir_frame.pack(fill=X, pady=5)
@@ -617,30 +707,25 @@ class ArabicProcessorApp:
 
         self.check_progress_queue()
 
-    # --- Drag and Drop Event Handlers ---
+    # --- Drag and Drop Event Handlers (Unchanged) ---
     def handle_drag_enter_listbox(self, event):
         if not DND_SUPPORTED: return
         is_file_drag = False
-        # event.types can be a tuple of strings or DND constants
         if hasattr(event, 'types'):
             for t_spec in event.types:
-                # On Windows, CF_HDROP (integer) is often used for files.
-                # DND_FILES is a string 'DND_FILES'
                 if t_spec == DND_FILES or (sys.platform == 'win32' and t_spec == CF_HDROP):
                     is_file_drag = True
                     break
-        
         if is_file_drag:
             try:
                 if self.files_listbox.winfo_exists():
-                    self.files_listbox.configure(background='lightblue') # Highlight
-            except tk.TclError: pass # Widget might not exist
-            return DND_ACTION_COPY # Indicate copy operation is accepted
-        return None # Reject (no action or default action)
+                    self.files_listbox.configure(background='lightblue') 
+            except tk.TclError: pass 
+            return DND_ACTION_COPY 
+        return None
 
     def handle_drag_over_listbox(self, event):
         if not DND_SUPPORTED: return
-        # Similar check as DragEnter to continuously indicate we accept file copy
         is_file_drag = False
         if hasattr(event, 'types'):
             for t_spec in event.types:
@@ -655,82 +740,110 @@ class ArabicProcessorApp:
         if not DND_SUPPORTED: return
         try:
             if hasattr(self, 'original_listbox_bg') and self.files_listbox.winfo_exists():
-                self.files_listbox.configure(background=self.original_listbox_bg) # Restore
+                self.files_listbox.configure(background=self.original_listbox_bg) 
         except tk.TclError: pass
-        # No specific return needed for DragLeave
 
     def handle_file_drop(self, event):
         if not DND_SUPPORTED: return
         try:
-            # Restore original appearance first
             if hasattr(self, 'original_listbox_bg') and self.files_listbox.winfo_exists():
                 self.files_listbox.configure(background=self.original_listbox_bg)
-
-            if not event.data: # No data in the drop event
-                return
-
-            # event.data is a string containing file paths,
-            # possibly space-separated and paths with spaces enclosed in curly braces {}.
-            # event.widget.tk.splitlist() handles this parsing.
+            if not event.data: return
             try:
                 files_to_add_raw = event.widget.tk.splitlist(event.data)
             except tk.TclError as e:
                 print(f"Error splitting dropped data: {e}. Data: '{event.data}'", file=sys.stderr)
                 self.log_message(f"خطأ في تحليل البيانات المسقطة: {event.data}", "error")
                 return
-
             added_count = 0
-            # Use a set of lowercase paths for efficient "already added" check
             current_file_paths_lower = {f.lower() for f in self.selected_files}
-
             for f_path_raw in files_to_add_raw:
-                # Normalize the path (removes extra quotes on some systems, resolves . ..)
                 f_path = os.path.normpath(f_path_raw)
-
                 if os.path.isfile(f_path):
                     if f_path.lower() not in current_file_paths_lower:
                         self.selected_files.append(f_path)
-                        current_file_paths_lower.add(f_path.lower()) # Update for this batch
+                        current_file_paths_lower.add(f_path.lower()) 
                         added_count += 1
                     else:
-                        # Log that file was already present (optional, can be chatty)
                         self.log_message(f"الملف مضاف بالفعل (تم تجاهله): {os.path.basename(f_path)}", "info")
                 else:
                     self.log_message(f"العنصر المسقط ليس ملفًا صالحًا أو غير موجود: {os.path.basename(f_path_raw)}", "error")
-            
             if added_count > 0:
                 self.update_selected_files_display()
                 self.log_message(f"تمت إضافة {added_count} ملفات عن طريق السحب والإفلات.", "info")
         except Exception as e:
             self.log_message(f"خطأ أثناء معالجة الملفات المسقطة: {e}", "error")
             print(f"Error handling file drop: {e}\nDropped data was: '{event.data}'", file=sys.stderr)
-    # --- End Drag and Drop Event Handlers ---
 
-    def apply_text_transformations(self, text_input):
-        if not isinstance(text_input, str):
-            return text_input
-        if not _is_arabic(text_input):
-            return text_input
-        if not self.split_enabled:
-            return process_arabic_text_core(text_input)
-        try:
-            words_for_first_segment = int(self.split_words_from_end)
-            if words_for_first_segment < 0: words_for_first_segment = 0 
-        except ValueError:
-            words_for_first_segment = 0
-        segment1_raw, segment2_raw = split_text_into_two_parts(text_input, words_for_first_segment)
-        processed_segment1 = process_arabic_text_core(segment1_raw)
-        processed_segment2 = process_arabic_text_core(segment2_raw)
-        if segment1_raw and segment2_raw:
-            return processed_segment1 + self.split_separator_raw + processed_segment2
-        elif segment1_raw: return processed_segment1
-        elif segment2_raw: return processed_segment2
-        else: return process_arabic_text_core(text_input)
+    # --- Core text transformation function (MODIFIED) ---
+    def apply_text_transformations(self, text_input_line):
+        if not isinstance(text_input_line, str): # Should not happen for lines, but good check
+            return text_input_line
+        
+        # Only apply transformations if the text segment contains Arabic
+        # or if splitting is enabled (as non-Arabic parts might be part of a split sequence).
+        # However, the core processing itself checks for Arabic, so we mainly decide on splitting here.
+        if not _is_arabic(text_input_line) and not self.split_enabled : # if not arabic and no splitting, return as is
+             return text_input_line
+        
+        if not self.split_enabled : # No advanced splitting, just process
+            return process_arabic_text_core(text_input_line)
+
+        # Advanced splitting is enabled
+        if self.split_mode == "words_from_end":
+            try:
+                words_for_first_segment = int(self.split_words_from_end)
+                if words_for_first_segment < 0: words_for_first_segment = 0 
+            except ValueError:
+                words_for_first_segment = 0 # Default to no split if error
+
+            segment1_raw, segment2_raw = split_text_into_two_parts(text_input_line, words_for_first_segment)
+            
+            processed_segment1 = process_arabic_text_core(segment1_raw)
+            processed_segment2 = process_arabic_text_core(segment2_raw)
+
+            # Combine based on what segments actually exist
+            if segment1_raw and segment2_raw:
+                return processed_segment1 + self.split_separator_raw + processed_segment2
+            elif segment1_raw: # Only first segment (original text was short or all words taken for first segment)
+                return processed_segment1
+            elif segment2_raw: # Only second segment (words_for_first_segment was 0)
+                return processed_segment2
+            else: # Neither, or original was empty/non-Arabic and got filtered by split_text_into_two_parts
+                return process_arabic_text_core(text_input_line) # Fallback to process original if segments are empty
+
+        elif self.split_mode == "max_length":
+            try:
+                current_max_len = int(self.max_line_length)
+                if current_max_len <= 0: current_max_len = 80 # Fallback
+            except ValueError:
+                current_max_len = 80 # Fallback
+
+            # If the input line itself is not Arabic, but splitting is enabled,
+            # we might still want to "split" it (it would result in one part)
+            # and then process_arabic_text_core will return it as is.
+            # This ensures the separator logic works even if parts are non-Arabic.
+            if not _is_arabic(text_input_line): # If the whole line isn't Arabic, don't try to split it by length
+                 return text_input_line # or process_arabic_text_core(text_input_line) if you want it through the reshaper
+
+            sub_segments_raw = split_string_by_length_with_word_awareness(text_input_line, current_max_len)
+            
+            if not sub_segments_raw: # Should not happen if split_string_by_length... returns [text] for empty
+                return process_arabic_text_core(text_input_line)
+
+            processed_sub_segments = [process_arabic_text_core(seg) for seg in sub_segments_raw]
+            
+            return self.split_separator_raw.join(processed_sub_segments)
+        
+        else: # Unknown split mode, fallback
+            return process_arabic_text_core(text_input_line)
+
 
     def open_advanced_split_options_dialog(self):
         dialog = AdvancedSplitOptionsDialog(self.root, self)
-        dialog.wait_window()
+        dialog.wait_window() # Wait for dialog to close
 
+    # --- Other GUI methods (mostly unchanged, ensure they call apply_text_transformations correctly) ---
     def _force_right_align_input(self, event=None):
         try:
             if not self.input_text_area.winfo_exists(): return
@@ -767,9 +880,12 @@ class ArabicProcessorApp:
                    messagebox.showwarning(APP_TITLE, "الرجاء إدخال نص للمعالجة.", parent=self.direct_tab)
                 self.output_text_area.config(state=tk.DISABLED, cursor='arrow')
                 return
+            
+            # Process line by line, applying transformations which now include advanced splitting
             lines = input_text_block.splitlines()
             processed_lines = [self.apply_text_transformations(line) for line in lines]
             final_processed_text = "\n".join(processed_lines)
+            
             self.output_text_area.insert(tk.END, final_processed_text)
             self.output_text_area.tag_remove("right_readonly", "1.0", "end")
             self.output_text_area.tag_add("right_readonly", "1.0", "end")
@@ -787,6 +903,7 @@ class ArabicProcessorApp:
                 if self.direct_tab.winfo_exists():
                     messagebox.showerror(APP_TITLE, f"حدث خطأ غير متوقع:\n{e}", parent=self.direct_tab)
             except tk.TclError: pass
+            print(f"Error in process_direct_text: {e}", file=sys.stderr) # Debug
         finally:
             try:
                 if not has_processed_text and self.copy_all_button.winfo_exists():
@@ -857,6 +974,7 @@ class ArabicProcessorApp:
              if file_path:
                  try:
                      with open(file_path, 'w', encoding='utf-8') as f:
+                         # Ensure consistent newlines before writing
                          f.write(processed_text.replace('\r\n', '\n').replace('\r', '\n') + '\n')
                      messagebox.showinfo(APP_TITLE, f"تم حفظ النص بنجاح في:\n{file_path}", parent=parent_widget)
                  except Exception as e: messagebox.showerror(APP_TITLE, f"{ERROR_WRITING_FILE}:\n{e}", parent=parent_widget)
@@ -877,7 +995,6 @@ class ArabicProcessorApp:
         try:
             selected = filedialog.askopenfilenames(title="اختر ملفات للمعالجة", filetypes=[("Text Files", "*.txt"), ("CSV Files", "*.csv"), ("JSON Files", "*.json"), ("XML Files", "*.xml"), ("All Files", "*.*")], parent=parent_widget)
             if selected: 
-                # Add to existing selected files, avoid duplicates
                 newly_selected_files = list(selected)
                 current_file_paths_lower = {f.lower() for f in self.selected_files}
                 added_count = 0
@@ -889,7 +1006,6 @@ class ArabicProcessorApp:
                 if added_count > 0 :
                      self.update_selected_files_display()
                      self.log_message(f"تمت إضافة {added_count} ملفات عبر مربع الحوار.", "info")
-
         except Exception as e:
              print(f"Error during file selection: {e}", file=sys.stderr)
              try: messagebox.showerror(APP_TITLE, f"حدث خطأ أثناء اختيار الملفات:\n{e}", parent=parent_widget)
@@ -931,7 +1047,6 @@ class ArabicProcessorApp:
             if self.worker_thread and self.worker_thread.is_alive():
                  if parent_for_msg.winfo_exists(): messagebox.showwarning(APP_TITLE, "لا يمكن المسح أثناء معالجة الملفات.", parent=parent_for_msg)
                  return
-
             self.selected_files = []
             if self.files_listbox.winfo_exists(): self.update_selected_files_display()
             self.output_directory = ""
@@ -974,7 +1089,6 @@ class ArabicProcessorApp:
                 self.log_area.insert(tk.END, f"بدء معالجة {len(self.selected_files)} ملف...\n", ("log_base", "info"))
                 self.log_area.see(tk.END)
                 self.log_area.config(state=tk.DISABLED, cursor="arrow")
-            
             self.worker_thread = threading.Thread(target=file_processing_worker, args=(self.selected_files, self.output_directory, self.progress_queue, self.apply_text_transformations), daemon=True)
             self.worker_thread.start()
         except tk.TclError:
@@ -1008,8 +1122,7 @@ class ArabicProcessorApp:
             if not self.root.winfo_exists(): return
             while True:
                 message_type, data = self.progress_queue.get_nowait()
-                if not self.root.winfo_exists(): return
-
+                if not self.root.winfo_exists(): return 
                 if message_type == "progress":
                     if self.progress_bar.winfo_exists(): self.progress_bar['value'] = data
                 elif message_type == "log": self.log_message(data, "success")
@@ -1026,11 +1139,11 @@ class ArabicProcessorApp:
                     self.log_message("--- اكتملت المعالجة ---", "info")
                     if parent_widget: messagebox.showinfo(APP_TITLE, DONE_STATUS, parent=parent_widget)
                     self.worker_thread = None
-                    break
+                    break 
         except queue.Empty: pass
         except tk.TclError as e:
             print(f"Error updating GUI from queue (widget likely destroyed): {e}", file=sys.stderr)
-            return
+            return 
         except Exception as e:
             print(f"Unexpected error updating GUI from queue: {e}", file=sys.stderr)
             try: self.log_message(f"خطأ في تحديث الواجهة: {e}", "error")
@@ -1046,7 +1159,7 @@ class ArabicProcessorApp:
         try:
             help_win = tb.Toplevel(master=self.root, title=HELP_TITLE)
             help_win.transient(self.root); help_win.grab_set()
-            help_win.geometry("600x580"); help_win.resizable(False, False) # Adjusted for new DND info
+            help_win.geometry("620x600"); help_win.resizable(False, False) # Adjusted for new DND info
             help_frame = ttk.Frame(help_win, padding=10)
             help_frame.pack(expand=True, fill=BOTH)
             help_text_widget = scrolledtext.ScrolledText(help_frame, wrap=tk.WORD, padx=5, pady=5, font=self.arabic_ui_font)
@@ -1129,7 +1242,7 @@ class ArabicProcessorApp:
                              if isinstance(widget, (tk.Text, scrolledtext.ScrolledText)):
                                  try: new_state = tk.NORMAL if widget.get("1.0", "end-1c").strip() else tk.DISABLED
                                  except tk.TclError: pass
-                             else: new_state = tk.DISABLED # Listbox select all not standard
+                             else: new_state = tk.DISABLED 
                         menu.entryconfig(item_idx, state=new_state)
                 except tk.TclError: continue
             menu.tk_popup(event.x_root, event.y_root)
@@ -1163,7 +1276,7 @@ class ArabicProcessorApp:
                 original_state = tk.DISABLED
                 widget.config(state=tk.NORMAL)
             widget.tag_remove(tk.SEL, "1.0", tk.END)
-            widget.tag_add(tk.SEL, "1.0", "end-1c") # Select up to last char
+            widget.tag_add(tk.SEL, "1.0", "end-1c") 
             widget.mark_set(tk.INSERT, "1.0"); widget.see(tk.INSERT)
         except tk.TclError: pass
         finally:
@@ -1194,32 +1307,23 @@ if __name__ == "__main__":
     try:
         if sys.stdout.encoding is None or sys.stdout.encoding.lower() != 'utf-8': sys.stdout.reconfigure(encoding='utf-8')
         if sys.stderr.encoding is None or sys.stderr.encoding.lower() != 'utf-8': sys.stderr.reconfigure(encoding='utf-8')
-    except AttributeError: pass # .reconfigure not available on all platforms/streams
+    except AttributeError: pass 
     except Exception as e: print(f"Note: Could not reconfigure stdout/stderr encoding to UTF-8: {e}", file=sys.stderr)
 
     try:
         if DND_SUPPORTED:
-            # If tkinterdnd2 is available, use TkinterDnD.Tk() as the root.
-            # This makes the root window DND-aware, which is often necessary
-            # for drag-and-drop to function correctly on all widgets within it.
             root = TkinterDnD.Tk()
-            # ttkbootstrap.Window normally sets up its style on the root.
-            # We need to ensure the theme is applied.
-            # ArabicProcessorApp will create a tb.Style instance which should
-            # apply the theme globally to ttk widgets within this root.
         else:
-            # If tkinterdnd2 is not available, use the standard ttkbootstrap.Window.
             root = tb.Window(themename="litera")
 
         app = ArabicProcessorApp(root)
-        root.protocol("WM_DELETE_WINDOW", app.on_closing) # Set protocol on the chosen root
+        root.protocol("WM_DELETE_WINDOW", app.on_closing) 
         root.mainloop()
     except tk.TclError as e:
         print(f"Fatal Tkinter error on startup: {e}", file=sys.stderr)
-        # Try to show a native messagebox if Tkinter itself is too broken for a Tk messagebox
         try:
             import ctypes
-            ctypes.windll.user32.MessageBoxW(0, f"Fatal Tkinter error:\n{e}\n\nThe application cannot start.", "Application Error", 0x10) # 0x10 is MB_ICONERROR
-        except Exception: pass # If ctypes fails, just print to console
+            ctypes.windll.user32.MessageBoxW(0, f"Fatal Tkinter error:\n{e}\n\nThe application cannot start.", "Application Error", 0x10) 
+        except Exception: pass 
     except Exception as e:
          print(f"Fatal error during application startup: {e}", file=sys.stderr)
