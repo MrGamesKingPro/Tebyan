@@ -57,7 +57,7 @@ MENU_ABOUT = "عن البرنامج"
 MENU_INSTRUCTIONS = "تعليمات"
 HELP_TITLE = "تعليمات"
 ABOUT_TITLE = "حول البرنامج"
-ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.4.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية سحب وإفلات الملفات وخيارات تقسيم متقدمة جديدة.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.5.0
+ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.5.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية سحب وإفلات الملفات وخيارات تقسيم متقدمة جديدة.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.5.0
 HELP_TEXT = """
 كيفية الاستخدام:
 
@@ -205,6 +205,27 @@ def split_string_by_length_with_word_awareness(text, max_chars):
                                   replace_whitespace=False,
                                   drop_whitespace=True)
     return wrapped_lines if wrapped_lines else [text]
+
+# --- Helper to extract common wrappers like "" or () ---
+def extract_wrappers(text):
+    """
+    Checks for common surrounding wrappers like "" or () and extracts them.
+    Returns (start_wrapper, core_text, end_wrapper).
+    If no wrapper is found, returns ("", text, "").
+    """
+    if not isinstance(text, str) or len(text) < 2:
+        return "", text, ""
+
+    # Define pairs of wrappers
+    wrapper_pairs = [('"', '"'), ("'", "'"), ('(', ')'), ('[', ']'), ('{', '}')]
+
+    for start_char, end_char in wrapper_pairs:
+        if text.startswith(start_char) and text.endswith(end_char):
+            # Return the wrappers and the core text inside
+            return start_char, text[1:-1], end_char
+    
+    # No matching wrappers found
+    return "", text, ""
 
 
 # --- File Processing Logic (unchanged) ---
@@ -775,18 +796,15 @@ class ArabicProcessorApp:
             self.log_message(f"خطأ أثناء معالجة الملفات المسقطة: {e}", "error")
             print(f"Error handling file drop: {e}\nDropped data was: '{event.data}'", file=sys.stderr)
 
-    # --- Core text transformation function (MODIFIED) ---
+    # --- Core text transformation function (MODIFIED for Wrapper-Aware Splitting) ---
     def apply_text_transformations(self, text_input_line):
-        if not isinstance(text_input_line, str): # Should not happen for lines, but good check
+        if not isinstance(text_input_line, str):
             return text_input_line
-        
-        # Only apply transformations if the text segment contains Arabic
-        # or if splitting is enabled (as non-Arabic parts might be part of a split sequence).
-        # However, the core processing itself checks for Arabic, so we mainly decide on splitting here.
-        if not _is_arabic(text_input_line) and not self.split_enabled : # if not arabic and no splitting, return as is
+
+        if not _is_arabic(text_input_line) and not self.split_enabled:
              return text_input_line
         
-        if not self.split_enabled : # No advanced splitting, just process
+        if not self.split_enabled:
             return process_arabic_text_core(text_input_line)
 
         # Advanced splitting is enabled
@@ -795,45 +813,50 @@ class ArabicProcessorApp:
                 words_for_first_segment = int(self.split_words_from_end)
                 if words_for_first_segment < 0: words_for_first_segment = 0 
             except ValueError:
-                words_for_first_segment = 0 # Default to no split if error
+                words_for_first_segment = 0
 
             segment1_raw, segment2_raw = split_text_into_two_parts(text_input_line, words_for_first_segment)
             
             processed_segment1 = process_arabic_text_core(segment1_raw)
             processed_segment2 = process_arabic_text_core(segment2_raw)
 
-            # Combine based on what segments actually exist
             if segment1_raw and segment2_raw:
                 return processed_segment1 + self.split_separator_raw + processed_segment2
-            elif segment1_raw: # Only first segment (original text was short or all words taken for first segment)
+            elif segment1_raw:
                 return processed_segment1
-            elif segment2_raw: # Only second segment (words_for_first_segment was 0)
+            elif segment2_raw:
                 return processed_segment2
-            else: # Neither, or original was empty/non-Arabic and got filtered by split_text_into_two_parts
-                return process_arabic_text_core(text_input_line) # Fallback to process original if segments are empty
+            else:
+                return process_arabic_text_core(text_input_line)
 
         elif self.split_mode == "max_length":
+            # --- NEW LOGIC FOR WRAPPER-AWARE SPLITTING ---
+            start_wrapper, core_text, end_wrapper = extract_wrappers(text_input_line)
+
+            # Only proceed with splitting if the core text is Arabic
+            if not _is_arabic(core_text):
+                 return text_input_line
+
             try:
                 current_max_len = int(self.max_line_length)
                 if current_max_len <= 0: current_max_len = 80 # Fallback
             except ValueError:
-                current_max_len = 80 # Fallback
+                current_max_len = 80
 
-            # If the input line itself is not Arabic, but splitting is enabled,
-            # we might still want to "split" it (it would result in one part)
-            # and then process_arabic_text_core will return it as is.
-            # This ensures the separator logic works even if parts are non-Arabic.
-            if not _is_arabic(text_input_line): # If the whole line isn't Arabic, don't try to split it by length
-                 return text_input_line # or process_arabic_text_core(text_input_line) if you want it through the reshaper
-
-            sub_segments_raw = split_string_by_length_with_word_awareness(text_input_line, current_max_len)
+            # Split only the core text
+            sub_segments_raw = split_string_by_length_with_word_awareness(core_text, current_max_len)
             
-            if not sub_segments_raw: # Should not happen if split_string_by_length... returns [text] for empty
-                return process_arabic_text_core(text_input_line)
+            if not sub_segments_raw:
+                return text_input_line
 
+            # Process each segment individually
             processed_sub_segments = [process_arabic_text_core(seg) for seg in sub_segments_raw]
             
-            return self.split_separator_raw.join(processed_sub_segments)
+            # Join the processed segments with the separator
+            joined_processed_text = self.split_separator_raw.join(processed_sub_segments)
+            
+            # Re-apply the wrappers to the final result
+            return start_wrapper + joined_processed_text + end_wrapper
         
         else: # Unknown split mode, fallback
             return process_arabic_text_core(text_input_line)
