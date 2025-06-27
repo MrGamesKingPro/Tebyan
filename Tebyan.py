@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET # Import ElementTree
 from xml.etree.ElementTree import ParseError as ETParseError # Import specific ParseError
 import threading
 import queue # For thread-safe GUI updates
-import re # For splitting key=value
+import re # For splitting key=value and for the new core processing
 import textwrap # For the new max-length splitting
 
 # --- Try to import tkinterdnd2 for drag-and-drop ---
@@ -57,7 +57,7 @@ MENU_ABOUT = "عن البرنامج"
 MENU_INSTRUCTIONS = "تعليمات"
 HELP_TITLE = "تعليمات"
 ABOUT_TITLE = "حول البرنامج"
-ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.6.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية المعالجة المشروطة بناءً على كلمة محددة.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.6.0
+ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.7.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية المعالجة المشروطة بناءً على كلمة محددة.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.7.0
 
 ##--جديد--##
 HELP_TEXT = """
@@ -137,7 +137,7 @@ OK_BUTTON_TEXT = "موافق"
 CANCEL_BUTTON_TEXT = "إلغاء"
 
 PREDEFINED_SEPARATORS = { # Display name: actual value
-    "\n ": "\n",
+    "\\n ": "\n",
     "<br> ": "<br>",
     "[LB] ": "[line-break]",
     "| ": " | ",
@@ -155,20 +155,36 @@ def _is_arabic(text_segment):
                '\uFE70' <= char <= '\uFEFF'
                for char in text_segment)
 
-# --- Core Processing Function ---
+# --- Core Processing Function (Rewritten to process the whole string at once) ---
 def process_arabic_text_core(input_text):
+    """
+    Processes a string containing Arabic text for correct display in LTR-only environments.
+    It intelligently handles strings with mixed Arabic and non-Arabic content by passing
+    the complete string to the reshaping and bidi layout engines. This ensures that
+    context, especially for punctuation, is preserved and handled correctly.
+    """
     if not _is_arabic(input_text):
         return input_text
     try:
+        # Configure the reshaper once for efficiency
         configuration = {
             'delete_harakat': False,
             'shift_harakat_position': False,
             'support_ligatures': True,
         }
         reshaper_instance = arabic_reshaper.ArabicReshaper(configuration=configuration)
+
+        # The text is first reshaped. The default behavior of reshape() is to
+        # also reverse the string for simple LTR display.
         reshaped_text = reshaper_instance.reshape(input_text)
+        
+        # Then, the bidi algorithm is applied to the entire reshaped string.
+        # This correctly handles the overall layout, including positioning
+        # of neutral characters (like '.') and reordering mixed LTR/RTL segments.
         bidi_text = get_display(reshaped_text)
+        
         return bidi_text
+        
     except Exception as e:
         print(f"Error in process_arabic_text_core for: '{input_text[:50]}...' - {e}", file=sys.stderr)
         return input_text
@@ -604,7 +620,7 @@ class ArabicProcessorApp:
         self.split_mode = "words_from_end" # "words_from_end" or "max_length"
         self.split_words_from_end = 1
         self.max_line_length = 15
-        self.split_separator_raw = "\\n" 
+        self.split_separator_raw = "\n" 
 
         # ... ( باقي __init__ بدون تغيير ) ...
         self.menu_bar = tk.Menu(root)
