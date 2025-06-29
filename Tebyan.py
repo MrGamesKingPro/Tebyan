@@ -57,52 +57,43 @@ MENU_ABOUT = "عن البرنامج"
 MENU_INSTRUCTIONS = "تعليمات"
 HELP_TITLE = "تعليمات"
 ABOUT_TITLE = "حول البرنامج"
-ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.7.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية المعالجة المشروطة بناءً على كلمة محددة.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.7.0
+ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.8.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\nتمت إضافة خاصية تجاهل الأكواد المخصصة أثناء المعالجة.\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro" # Version Bumped to 1.8.0
 
 ##--جديد--##
 HELP_TEXT = """
 كيفية الاستخدام:
 
 1.  **معالجة نصوص (التبويب الأول):**
-    *   .اكتب أو الصق النص العربي في المربع العلوي.
-    *   .اضغط على زر 'معالجة النص'
-    *   .سيظهر النص المعدل في المربع السفلي، جاهزاً للنسخ.
-    *   .يمكنك نسخ النص المعدل بالكامل باستخدام زر 'نسخ الكل' الموجود أسفله.
-    *   .يمكنك مسح مربعات النص الإدخال والإخراج باستخدام زر 'مسح الكل (النصوص)'
-    *   .يمكنك حفظ النص المعدل من قائمة 'ملف'.
-    *   **خيارات متقدمة**: يمكن الوصول إليها عبر زر 'خيارات متقدمة...' بجانب زر 'معالجة النص'.
+    *   اكتب أو الصق النص العربي في المربع العلوي.
+    *   اضغط على زر 'معالجة النص'.
+    *   سيظهر النص المعدل في المربع السفلي، جاهزاً للنسخ.
+    *   يمكنك نسخ النص المعدل بالكامل باستخدام زر 'نسخ الكل'.
+    *   يمكنك مسح مربعات النص باستخدام زر 'مسح الكل (النصوص)'.
 
 2.  **معالجة ملفات (التبويب الثاني):**
-    *   .(.txt)، JSON (.json)، CSV (.csv)، أو XML (.xml) اضغط على 'فتح ملفًا أو أكثر' لتحديد ملفات نصية ذات إمتداد
-    *   **جديد**: يمكنك أيضاً سحب وإفلات الملفات مباشرة إلى قائمة الملفات في هذا التبويب.
-    *   .اضغط على 'مسارالمجلد الحفظ' لتحديد المجلد الذي سيتم حفظ الملفات المعالجة فيه
-    *   .سيتم إنشاء مجلد فرعي باسم 'processed_files' داخل المجلد المختار (إذا لم يكن موجوداً)
-    *   .اضغط على 'معالجة الملفات المحددة'.
-    *   .سيتم معالجة النصوص العربية فقط داخل الملفات وحفظ نسخ جديدة بنفس إسم والتنسيق في المجلد المخصص
-    *   .**(TXT) بالنسبة لملفات النص العامة**: إذا كان السطر يحتوي على علامة '='، سيحاول البرنامج معالجة وتقسيم النص العربي الموجود *بعد* أول علامة '=' فقط، مع الحفاظ على المفتاح (الجزء قبل '=') كما هو. إذا لم يكن هناك نص عربي بعد '=' أو لم توجد علامة '='، فسيتم فحص السطر بأكمله؛ إذا كان عربياً، سيعالج ويقسم، وإلا سيترك كما هو.
-    *   .(XML سيتم معالجة النصوص داخل العناصر، ونهايات العناصر، وقيم السمات في ملفات)
-    *   .تابع شريط التقدم وسجل الحالة لمعرفة حالة العملية.
-    *   .يمكنك مسح قائمة الملفات ومجلد الحفظ والسجل باستخدام زر 'مسح الكل (الملفات)'
-    *   **خيارات متقدمة**: يمكن الوصول إليها عبر زر 'خيارات متقدمة...' أسفل أزرار التحكم بالملفات.
+    *   اضغط على 'فتح ملفًا أو أكثر' لتحديد ملفات نصية (.txt, .json, .csv, .xml).
+    *   يمكنك أيضاً سحب وإفلات الملفات مباشرة إلى قائمة الملفات.
+    *   اضغط على 'مسار المجلد الحفظ' لتحديد مكان حفظ الملفات المعالجة.
+    *   اضغط على 'معالجة الملفات المحددة'.
+    *   تابع شريط التقدم وسجل الحالة لمعرفة حالة العملية.
 
-3.  **الخيارات المتقدمة (تنطبق على كلا التبويبين عند التفعيل):**
-    *   يتم الوصول إليها من خلال زر "خيارات متقدمة..." في أي من التبويبين.
-    *   **المعالجة المشروطة حسب الكلمة (جديد):**
-        *   عند تفعيل هذا الخيار، سيقوم البرنامج بفحص كل سطر أولاً.
-        *   لن تتم معالجة السطر إلا إذا كان يحتوي على الكلمة أو العبارة التي تحددها في مربع النص المخصص.
-        *   إذا لم يحتوي السطر على تلك الكلمة، فسيتم تجاهله وتركه كما هو في الملف الناتج.
-        *   هذا الفلتر يعمل *قبل* تطبيق خيارات التقسيم المتقدمة.
-    *   **تمكين تقسيم الأسطر المتقدم**: عند تحديد هذا الخيار، سيتم تطبيق أحد وضعي التقسيم التاليين على الأسطر التي تجتاز فلتر "المعالجة المشروطة" (إذا كان مفعلاً):
-        *   **وضع "تقسيم حسب عدد الكلمات من النهاية":**
-            *   **عدد الكلمات من نهاية السطر للجزء الأول**: هذا الرقم يحدد عدد الكلمات التي سيتم أخذها من *نهاية* السطر الأصلي لتكوين "الجزء الأول" من التقسيم. الكلمات المتبقية في *بداية* السطر الأصلي ستشكل "الجزء الثاني".
-        *   **وضع "تقسيم حسب طول السطر الأقصى":**
-            *   **الحد الأقصى لعدد الأحرف في السطر الواحد**: يحدد هذا الرقم الطول الأقصى التقريبي لكل جزء ناتج عن التقسيم.
-    *   **فاصل الأجزاء**: السلسلة النصية التي سيتم إدراجها بين الأجزاء المعالجة (سواء في وضع "الكلمات من النهاية" أو "طول السطر الأقصى").
+3.  **الخيارات المتقدمة (يمكن الوصول إليها من كلا التبويبين):**
+    *   **تجاهل الأكواد المخصصة (جديد):**
+        *   عند تفعيل هذا الخيار، يمكنك كتابة قائمة من الأكواد أو الوسوم (Tags) التي تريد حمايتها من المعالجة.
+        *   يجب الفصل بين كل كود بفاصلة (,). مثال: `<br>, </color>, [ICON_1]`
+        *   سيقوم البرنامج بتجاهل هذه الأكواد تمامًا أثناء عملية المعالجة (التقسيم والتشكيل)، مع الحفاظ عليها في مكانها الصحيح في النص النهائي.
+        *   هذا مفيد جدًا للحفاظ على أكواد التنسيق الخاصة بالألعاب والنصوص البرمجية.
+    *   **المعالجة المشروطة حسب الكلمة:**
+        *   لن تتم معالجة السطر إلا إذا كان يحتوي على الكلمة أو العبارة التي تحددها.
+    *   **تمكين تقسيم الأسطر المتقدم:** عند التفعيل، سيتم تطبيق أحد وضعي التقسيم:
+        *   **وضع "تقسيم حسب عدد الكلمات من النهاية":** يقسم السطر إلى جزأين بناءً على عدد الكلمات من النهاية.
+        *   **وضع "تقسيم حسب طول السطر الأقصى":** يقسم السطر إلى أجزاء متعددة، كل جزء لا يتجاوز الطول المحدد تقريبًا.
+    *   **فاصل الأجزاء:** النص الذي سيتم إدراجه بين الأجزاء المقسمة.
 
 ملاحظات عامة:
-*   .في ملفات CSV و JSON، سيتم محاولة معالجة كل القيم النصية التي تحتوي على حروف عربية
-*   .في ملفات XML، سيتم محاولة معالجة كل النصوص الموجودة في العناصر والسمات ونهايات العناصر التي تحتوي على حروف عربية
-*   .يمكنك استخدام زر الفأرة الأيمن للقص/النسخ/اللصق في مربعات النص (حسب ما إذا كان المربع قابلاً للكتابة أو للقراءة فقط)
+*   في ملفات TXT التي تحتوي على key=value، ستتم معالجة القيمة (value) فقط.
+*   في ملفات CSV و JSON و XML، ستتم محاولة معالجة كل القيم النصية التي تحتوي على حروف عربية.
+*   يمكنك استخدام زر الفأرة الأيمن للقص/النسخ/اللصق.
 """
 COPY_TEXT = "نسخ"
 PASTE_TEXT = "لصق"
@@ -119,10 +110,8 @@ OUTPUT_FOLDER_NAME = "processed_files"
 
 ADVANCED_OPTIONS_BUTTON_TEXT = "خيارات متقدمة..."
 ADVANCED_SPLIT_DIALOG_TITLE = "إعدادات المعالجة المتقدمة"
-##--جديد--##
 ENABLE_WORD_FILTER_CHECKBOX_TEXT = "تمكين المعالجة المشروطة (فقط للأسطر التي تحتوي على كلمة معينة)"
 FILTER_WORD_LABEL_TEXT = ":الكلمة/العبارة المشروطة"
-##--معدل--##
 ENABLE_SPLITTING_CHECKBOX_TEXT = "تمكين تقسيم الأسطر المتقدم"
 SPLIT_MODE_LABEL_TEXT = ":وضع التقسيم"
 WORDS_FROM_END_MODE_TEXT = "تقسيم حسب عدد الكلمات من النهاية"
@@ -135,6 +124,11 @@ ERROR_INVALID_WORD_COUNT = "عدد الكلمات يجب أن يكون رقمً�
 ERROR_INVALID_MAX_LENGTH = "الحد الأقصى لعدد الأحرف يجب أن يكون رقمًا صحيحًا أكبر من 0."
 OK_BUTTON_TEXT = "موافق"
 CANCEL_BUTTON_TEXT = "إلغاء"
+
+##--جديد--##
+ENABLE_IGNORE_CODES_CHECKBOX_TEXT = "تمكين تجاهل الأكواد المخصصة أثناء المعالجة"
+IGNORE_CODES_LABEL_TEXT = ":الأكواد المراد تجاهلها (يفصل بينها بفاصلة ,)"
+DEFAULT_IGNORE_CODES = "<br>, </br>, <color=...>, </color>, [ICON]"
 
 PREDEFINED_SEPARATORS = { # Display name: actual value
     "\\n ": "\n",
@@ -155,41 +149,21 @@ def _is_arabic(text_segment):
                '\uFE70' <= char <= '\uFEFF'
                for char in text_segment)
 
-# --- Core Processing Function (Rewritten to process the whole string at once) ---
+# --- Core Processing Function (unchanged) ---
 def process_arabic_text_core(input_text):
-    """
-    Processes a string containing Arabic text for correct display in LTR-only environments.
-    It intelligently handles strings with mixed Arabic and non-Arabic content by passing
-    the complete string to the reshaping and bidi layout engines. This ensures that
-    context, especially for punctuation, is preserved and handled correctly.
-    """
     if not _is_arabic(input_text):
         return input_text
     try:
-        # Configure the reshaper once for efficiency
-        configuration = {
-            'delete_harakat': False,
-            'shift_harakat_position': False,
-            'support_ligatures': True,
-        }
+        configuration = {'delete_harakat': False, 'support_ligatures': True}
         reshaper_instance = arabic_reshaper.ArabicReshaper(configuration=configuration)
-
-        # The text is first reshaped. The default behavior of reshape() is to
-        # also reverse the string for simple LTR display.
         reshaped_text = reshaper_instance.reshape(input_text)
-        
-        # Then, the bidi algorithm is applied to the entire reshaped string.
-        # This correctly handles the overall layout, including positioning
-        # of neutral characters (like '.') and reordering mixed LTR/RTL segments.
         bidi_text = get_display(reshaped_text)
-        
         return bidi_text
-        
     except Exception as e:
         print(f"Error in process_arabic_text_core for: '{input_text[:50]}...' - {e}", file=sys.stderr)
         return input_text
 
-# --- Text Splitting Utility Functions ---
+# --- Text Splitting Utility Functions (unchanged) ---
 def split_text_into_two_parts(text, words_for_first_part_from_end):
     if not isinstance(text, str) or not text.strip():
         return text, ""
@@ -209,15 +183,9 @@ def split_text_into_two_parts(text, words_for_first_part_from_end):
 def split_string_by_length_with_word_awareness(text, max_chars):
     if not isinstance(text, str) or not text.strip() or max_chars <= 0:
         return [text] # Return as a list with one item
-    
-    wrapped_lines = textwrap.wrap(text, width=max_chars,
-                                  break_long_words=True,
-                                  break_on_hyphens=False,
-                                  replace_whitespace=False,
-                                  drop_whitespace=True)
+    wrapped_lines = textwrap.wrap(text, width=max_chars, break_long_words=True, break_on_hyphens=False, replace_whitespace=False, drop_whitespace=True)
     return wrapped_lines if wrapped_lines else [text]
 
-# --- Helper to extract common wrappers like "" or () ---
 def extract_wrappers(text):
     if not isinstance(text, str) or len(text) < 2:
         return "", text, ""
@@ -226,7 +194,6 @@ def extract_wrappers(text):
         if text.startswith(start_char) and text.endswith(end_char):
             return start_char, text[1:-1], end_char
     return "", text, ""
-
 
 # --- File Processing Logic (unchanged) ---
 def process_txt_file(input_path, output_path, transform_function):
@@ -239,11 +206,9 @@ def process_txt_file(input_path, output_path, transform_function):
                 parts = original_line_rstrip.split('=', 1)
                 if len(parts) == 2:
                     key_part, value_part = parts
-                    # Let transform_function decide if it should process based on its internal logic (word filter, arabic check etc.)
                     processed_value = transform_function(value_part)
                     outfile.write(key_part + "=" + processed_value + '\n')
                 else:
-                    # Apply transform_function to the whole line
                     transformed_whole_line = transform_function(original_line_rstrip)
                     outfile.write(transformed_whole_line + '\n')
         return True, None
@@ -375,7 +340,6 @@ def file_processing_worker(file_list, output_dir, progress_queue, text_transform
 
     progress_queue.put(("done", None))
 
-
 # --- Advanced Split Options Dialog (MODIFIED) ---
 ##--معدل--##
 class AdvancedSplitOptionsDialog(tk.Toplevel):
@@ -395,8 +359,24 @@ class AdvancedSplitOptionsDialog(tk.Toplevel):
 
         main_frame = ttk.Frame(self, padding=15)
         main_frame.pack(expand=True, fill=BOTH)
+        
+        # --- NEW: Ignore Codes Section ---
+        ignore_frame = tb.Labelframe(main_frame, text="تجاهل الأكواد", bootstyle="danger", padding=10)
+        ignore_frame.pack(fill=X, pady=(0, 15))
 
-        # --- NEW: Conditional Word Filter Section ---
+        self.ignore_enabled_var = tk.BooleanVar(value=self.parent_app.ignore_codes_enabled)
+        ignore_check = tb.Checkbutton(ignore_frame, text=ENABLE_IGNORE_CODES_CHECKBOX_TEXT, variable=self.ignore_enabled_var, bootstyle="danger-round-toggle", command=self.toggle_ignore_codes_entry_state)
+        ignore_check.pack(anchor=E, pady=(0, 10))
+        
+        ignore_entry_frame = ttk.Frame(ignore_frame)
+        ignore_entry_frame.pack(fill=X, expand=True)
+        ignore_codes_label = ttk.Label(ignore_entry_frame, text=IGNORE_CODES_LABEL_TEXT, font=self.arabic_ui_font, wraplength=400, justify=RIGHT)
+        ignore_codes_label.pack(side=RIGHT, padx=(0, 5), fill=Y)
+        self.ignore_codes_var = tk.StringVar(value=self.parent_app.ignore_codes_raw_string)
+        self.ignore_codes_entry = tb.Entry(ignore_entry_frame, textvariable=self.ignore_codes_var, width=40, justify=LEFT)
+        self.ignore_codes_entry.pack(side=RIGHT, fill=X, expand=True)
+
+        # --- Conditional Word Filter Section ---
         filter_frame = tb.Labelframe(main_frame, text="المعالجة المشروطة", bootstyle="primary", padding=10)
         filter_frame.pack(fill=X, pady=(0, 15))
         
@@ -487,6 +467,7 @@ class AdvancedSplitOptionsDialog(tk.Toplevel):
         cancel_button = tb.Button(button_frame, text=CANCEL_BUTTON_TEXT, command=self.destroy, bootstyle="secondary")
         cancel_button.pack(side=RIGHT, padx=5, expand=True, fill=X)
 
+        self.toggle_ignore_codes_entry_state() # Initial state for new ignore codes
         self.toggle_filter_word_entry_state() # Initial state for new filter
         self.toggle_main_options_state()      # Initial state for splitting
         self.protocol("WM_DELETE_WINDOW", self.destroy)
@@ -505,6 +486,11 @@ class AdvancedSplitOptionsDialog(tk.Toplevel):
         self.geometry(f"+{x}+{y}")
 
     ##--جديد--##
+    def toggle_ignore_codes_entry_state(self):
+        is_enabled = self.ignore_enabled_var.get()
+        state = tk.NORMAL if is_enabled else tk.DISABLED
+        self.ignore_codes_entry.config(state=state)
+
     def toggle_filter_word_entry_state(self):
         is_enabled = self.filter_enabled_var.get()
         state = tk.NORMAL if is_enabled else tk.DISABLED
@@ -541,6 +527,14 @@ class AdvancedSplitOptionsDialog(tk.Toplevel):
 
     ##--معدل--##
     def ok_action(self):
+        # Save Ignore Codes settings
+        self.parent_app.ignore_codes_enabled = self.ignore_enabled_var.get()
+        raw_codes_string = self.ignore_codes_var.get()
+        self.parent_app.ignore_codes_raw_string = raw_codes_string
+        # Process into a list, sorting by length descending to handle overlapping codes (e.g., '</color>' before '<color>')
+        codes = [code.strip() for code in raw_codes_string.split(',') if code.strip()]
+        self.parent_app.ignore_codes_list = sorted(codes, key=len, reverse=True)
+
         # Save Filter settings
         self.parent_app.filter_by_word_enabled = self.filter_enabled_var.get()
         self.parent_app.filter_word = self.filter_word_var.get().strip()
@@ -590,7 +584,7 @@ class ArabicProcessorApp:
         else:
             self.style = tb.Style(theme="litera")
 
-        self.root.minsize(650, 680)
+        self.root.minsize(650, 720) # Increased min height for the new options
 
         self.default_font = tkfont.nametofont("TkDefaultFont")
         self.arabic_font_family = "Tahoma"
@@ -614,6 +608,12 @@ class ArabicProcessorApp:
 
         ##--معدل--##
         # Advanced processing configuration
+        self.ignore_codes_enabled = False
+        self.ignore_codes_raw_string = DEFAULT_IGNORE_CODES
+        # Parse the default string into a sorted list
+        initial_codes = [code.strip() for code in self.ignore_codes_raw_string.split(',') if code.strip()]
+        self.ignore_codes_list = sorted(initial_codes, key=len, reverse=True)
+
         self.filter_by_word_enabled = False
         self.filter_word = ""
         self.split_enabled = False
@@ -621,8 +621,8 @@ class ArabicProcessorApp:
         self.split_words_from_end = 1
         self.max_line_length = 15
         self.split_separator_raw = "\n" 
-
-        # ... ( باقي __init__ بدون تغيير ) ...
+        
+        # ... ( باقي __init__ بدون تغيير جوهري ) ...
         self.menu_bar = tk.Menu(root)
         root.config(menu=self.menu_bar)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0, font=self.menu_font_spec)
@@ -815,76 +815,83 @@ class ArabicProcessorApp:
             self.log_message(f"خطأ أثناء معالجة الملفات المسقطة: {e}", "error")
             print(f"Error handling file drop: {e}\nDropped data was: '{event.data}'", file=sys.stderr)
 
-    # --- Core text transformation function (MODIFIED) ---
+    # --- Core text transformation function (HEAVILY MODIFIED) ---
     ##--معدل--##
     def apply_text_transformations(self, text_input_line):
         if not isinstance(text_input_line, str):
             return text_input_line
 
-        # --- NEW: Conditional Word Filter Logic ---
-        # This is the first check. If the line doesn't pass, we return it as is.
+        # --- Stage 0: Conditional Word Filter ---
         if self.filter_by_word_enabled and self.filter_word:
             if self.filter_word not in text_input_line:
-                return text_input_line # Skip processing for this line
+                return text_input_line  # Exit early, no processing needed
 
-        # --- Existing Logic ---
-        is_line_arabic = _is_arabic(text_input_line)
-
-        # If splitting is not enabled, and the text is not Arabic, return it.
-        if not self.split_enabled and not is_line_arabic:
-             return text_input_line
+        # --- Stage 1: Placeholder Substitution for Ignored Codes ---
+        restoration_map = {}
+        line_to_process = text_input_line
         
-        # If splitting is not enabled, but the text IS Arabic, process it normally.
+        if self.ignore_codes_enabled and self.ignore_codes_list:
+            temp_line = line_to_process
+            for i, code in enumerate(self.ignore_codes_list):
+                # Use a unique, non-arabic placeholder
+                placeholder = f"__IGN{i}__" 
+                if code in temp_line:
+                    restoration_map[placeholder] = code
+                    temp_line = temp_line.replace(code, placeholder)
+            line_to_process = temp_line
+
+        # --- Stage 2: Core Processing Logic (operates on 'line_to_process') ---
+        processed_line = ""
+        is_line_arabic = _is_arabic(line_to_process)
+
         if not self.split_enabled:
-            return process_arabic_text_core(text_input_line)
+            # If no splitting, just process the whole line if it contains Arabic
+            processed_line = process_arabic_text_core(line_to_process) if is_line_arabic else line_to_process
+        else: # Advanced splitting is enabled
+            if self.split_mode == "words_from_end":
+                try:
+                    words_for_first = int(self.split_words_from_end)
+                    if words_for_first < 0: words_for_first = 0
+                except ValueError:
+                    words_for_first = 0
+                
+                seg1_raw, seg2_raw = split_text_into_two_parts(line_to_process, words_for_first)
+                proc_seg1 = process_arabic_text_core(seg1_raw)
+                proc_seg2 = process_arabic_text_core(seg2_raw)
+                
+                if proc_seg1 and proc_seg2:
+                    processed_line = proc_seg1 + self.split_separator_raw + proc_seg2
+                else:
+                    processed_line = proc_seg1 or proc_seg2 or line_to_process
 
-        # --- Advanced splitting is enabled ---
-        # The line has passed the word filter (if enabled) and now enters splitting logic.
-        if self.split_mode == "words_from_end":
-            try:
-                words_for_first_segment = int(self.split_words_from_end)
-                if words_for_first_segment < 0: words_for_first_segment = 0 
-            except ValueError:
-                words_for_first_segment = 0
-
-            segment1_raw, segment2_raw = split_text_into_two_parts(text_input_line, words_for_first_segment)
-            
-            processed_segment1 = process_arabic_text_core(segment1_raw)
-            processed_segment2 = process_arabic_text_core(segment2_raw)
-
-            if segment1_raw and segment2_raw:
-                return processed_segment1 + self.split_separator_raw + processed_segment2
-            elif segment1_raw:
-                return processed_segment1
-            elif segment2_raw:
-                return processed_segment2
-            else:
-                return process_arabic_text_core(text_input_line)
-
-        elif self.split_mode == "max_length":
-            start_wrapper, core_text, end_wrapper = extract_wrappers(text_input_line)
-
-            if not _is_arabic(core_text):
-                 return text_input_line
-
-            try:
-                current_max_len = int(self.max_line_length)
-                if current_max_len <= 0: current_max_len = 80
-            except ValueError:
-                current_max_len = 80
-
-            sub_segments_raw = split_string_by_length_with_word_awareness(core_text, current_max_len)
-            
-            if not sub_segments_raw:
-                return text_input_line
-
-            processed_sub_segments = [process_arabic_text_core(seg) for seg in sub_segments_raw]
-            joined_processed_text = self.split_separator_raw.join(processed_sub_segments)
-            return start_wrapper + joined_processed_text + end_wrapper
+            elif self.split_mode == "max_length":
+                start_wrap, core_text, end_wrap = extract_wrappers(line_to_process)
+                if not _is_arabic(core_text):
+                    processed_line = line_to_process
+                else:
+                    try:
+                        max_len = int(self.max_line_length)
+                        if max_len <= 0: max_len = 80
+                    except ValueError:
+                        max_len = 80
+                    
+                    sub_segments_raw = split_string_by_length_with_word_awareness(core_text, max_len)
+                    processed_sub_segments = [process_arabic_text_core(seg) for seg in sub_segments_raw]
+                    joined_text = self.split_separator_raw.join(processed_sub_segments)
+                    processed_line = start_wrap + joined_text + end_wrap
+            else: # Fallback
+                processed_line = process_arabic_text_core(line_to_process)
         
-        else: # Unknown split mode, fallback to basic processing
-            return process_arabic_text_core(text_input_line)
-
+        # --- Stage 3: Restore Ignored Codes from Placeholders ---
+        final_line = processed_line
+        if self.ignore_codes_enabled and restoration_map:
+            # Restore based on the longest keys first to avoid partial replacement issues
+            # (e.g., if placeholders were nested, which they aren't here, but it's robust)
+            sorted_placeholders = sorted(restoration_map.keys(), key=len, reverse=True)
+            for placeholder in sorted_placeholders:
+                final_line = final_line.replace(placeholder, restoration_map[placeholder])
+                
+        return final_line
 
     def open_advanced_split_options_dialog(self):
         dialog = AdvancedSplitOptionsDialog(self.root, self)
@@ -1204,7 +1211,7 @@ class ArabicProcessorApp:
         try:
             help_win = tb.Toplevel(master=self.root, title=HELP_TITLE)
             help_win.transient(self.root); help_win.grab_set()
-            help_win.geometry("620x650"); help_win.resizable(False, False) # Adjusted size
+            help_win.geometry("620x700"); help_win.resizable(False, False) # Adjusted size
             help_frame = ttk.Frame(help_win, padding=10)
             help_frame.pack(expand=True, fill=BOTH)
             help_text_widget = scrolledtext.ScrolledText(help_frame, wrap=tk.WORD, padx=5, pady=5, font=self.arabic_ui_font)
