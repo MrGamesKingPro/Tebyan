@@ -71,7 +71,7 @@ MENU_INSTRUCTIONS = "تعليمات"
 HELP_TITLE = "تعليمات"
 ABOUT_TITLE = "حول البرنامج"
 ##--MODIFIED--##
-ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 2.0.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\n- تم إصلاح مشكلة عكس الأكواد مثل '\\n'.\n- تمت إضافة دعم لملفات YAML.\n- تمت إضافة خيار محاذاة النص (يمين/يسار).\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro"
+ABOUT_TEXT = f"{APP_TITLE}\n\nالإصدار: 1.9.0\n\nبرنامج لمعالجة النصوص العربية لعرضها بشكل صحيح في التطبيقات والألعاب التي لا تدعم اللغة العربية.\n- تم إصلاح مشكلة عكس الأكواد مثل '\\n'.\n- تمت إضافة دعم لملفات YAML.\n- تمت إضافة خيار محاذاة النص (يمين/يسار).\n\n MrGamesKingPro Ⓒ 2025  جميع الحقوق محفوظة \n\n  https://github.com/MrGamesKingPro"
 
 ##--MODIFIED--##
 HELP_TEXT = """
@@ -1471,3 +1471,4 @@ if __name__ == "__main__":
         except Exception: pass 
     except Exception as e:
          print(f"Fatal error during application startup: {e}", file=sys.stderr)
+
