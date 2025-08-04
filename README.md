@@ -21,11 +21,13 @@ pip install tk ttkbootstrap arabic_reshaper python-bidi tkinterdnd2 pyyaml
 
 1.  **معالجة نصوص:** لمعالجة نص تقوم بكتابته مباشرة في البرنامج.
 
-![1](https://github.com/user-attachments/assets/f4c29303-df09-4fbf-88b7-c9d1d3593f98)
+<img width="665" height="815" alt="Screenshot_2025-08-05_00-19-00" src="https://github.com/user-attachments/assets/882dff91-5e34-4524-8887-848415827c6d" />
+
 
 2.  **معالجة ملفات:** لمعالجة النصوص العربية الموجودة داخل ملفات نصية (`.txt`, `.csv`, `.json`, `.xml`, `.yaml`).
 
-![2](https://github.com/user-attachments/assets/e13ee16d-4410-4e8f-a426-b7a20112ee5c)
+<img width="663" height="814" alt="Screenshot_2025-08-05_00-19-11" src="https://github.com/user-attachments/assets/05d718e1-5930-4e3d-b923-240116376e04" />
+
 
 ### كيفية الاستخدام:
 
